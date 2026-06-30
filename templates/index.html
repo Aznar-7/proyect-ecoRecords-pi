@@ -12,6 +12,7 @@
 </head>
 <body>
 
+  <!-- STATUS BAR -->
   <div class="status-bar">
     <span class="time">9:41</span>
     <div class="status-icons">
@@ -28,89 +29,192 @@
     </div>
   </div>
 
-  <header class="app-header">
-    <div class="app-title">
-      <p class="app-label">Tu música</p>
-      <h1 class="app-name serif">Eco <em>Records</em></h1>
-    </div>
-    <button class="settings-btn" aria-label="Ajustes">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-        <circle cx="12" cy="12" r="3"/>
-        <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-      </svg>
-    </button>
-  </header>
+  <!-- ═══════════════════════════════════
+       VISTA: INICIO
+  ════════════════════════════════════ -->
+  <div id="view-home" class="view active">
 
-  <section class="disc-section" aria-label="Disco actual">
-    <div class="disc-shadow"></div>
-    <div class="disc" id="disc">
-      <div class="disc-grooves"></div>
-      <div class="disc-shine"></div>
-      <div class="disc-label">
-        <div class="disc-dot"></div>
-        <span class="disc-tag" id="disc-tag">—</span>
+    <header class="app-header">
+      <div class="app-title">
+        <p class="app-label">Tu música</p>
+        <h1 class="app-name serif">Eco <em>Records</em></h1>
       </div>
-    </div>
-  </section>
-
-  <section class="track-section">
-    <div class="track-info">
-      <div class="track-text">
-        <h2 class="track-name serif" id="track-name">Cargando...</h2>
-        <p class="track-sub" id="track-sub">—</p>
-      </div>
-      <button class="play-btn" id="play-btn" aria-label="Pausar">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" id="play-icon">
-          <rect x="6" y="4" width="4" height="16" rx="1.5"/>
-          <rect x="14" y="4" width="4" height="16" rx="1.5"/>
+      <button class="settings-btn" aria-label="Ajustes">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
         </svg>
       </button>
-    </div>
-    <div class="progress-wrap">
-      <div class="progress-bar">
-        <div class="progress-fill" id="progress-fill" style="width:40%"></div>
-        <div class="progress-thumb" id="progress-thumb" style="left:40%"></div>
-      </div>
-      <div class="progress-times">
-        <span id="time-current">0:00</span>
-        <span id="time-total">0:00</span>
-      </div>
-    </div>
-  </section>
+    </header>
 
-  <section class="controls-card">
-    <div class="control-row">
-      <div class="control-label-wrap">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-          <path d="M11 5L6 9H2v6h4l5 4V5z"/>
-          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
-        </svg>
-        <span class="control-label">Volumen</span>
+    <section class="disc-section" aria-label="Disco actual">
+      <div class="disc-shadow"></div>
+      <div class="disc" id="disc">
+        <div class="disc-grooves"></div>
+        <div class="disc-shine"></div>
+        <div class="disc-label">
+          <div class="disc-dot"></div>
+          <span class="disc-tag" id="disc-tag">—</span>
+        </div>
       </div>
-      <span class="control-value" id="volume-display">70%</span>
-    </div>
-    <div class="slider-wrap">
-      <input type="range" min="0" max="100" value="70" class="slider" id="volume-slider" aria-label="Volumen">
-    </div>
-    <div class="divider"></div>
-    <div class="control-row">
-      <div class="control-label-wrap">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-          <path d="M9 21h6M12 3a6 6 0 0 1 4.47 10.12A4 4 0 0 0 15 17H9a4 4 0 0 0-1.47-3.88A6 6 0 0 1 12 3z"/>
-        </svg>
-        <span class="control-label">Iluminación</span>
-      </div>
-      <span class="control-value accent" id="lights-display">Cálida</span>
-    </div>
-    <div class="lights-row">
-      <button class="light-btn" data-preset="off">Apagado</button>
-      <button class="light-btn active" data-preset="warm">Cálida</button>
-      <button class="light-btn" data-preset="soft">Suave</button>
-    </div>
-  </section>
+    </section>
 
+    <section class="track-section">
+      <div class="track-info">
+        <div class="track-text">
+          <h2 class="track-name serif" id="track-name">Cargando...</h2>
+          <p class="track-sub" id="track-sub">—</p>
+        </div>
+        <button class="play-btn" id="play-btn" aria-label="Pausar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" id="play-icon">
+            <rect x="6" y="4" width="4" height="16" rx="1.5"/>
+            <rect x="14" y="4" width="4" height="16" rx="1.5"/>
+          </svg>
+        </button>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progress-fill" style="width:40%"></div>
+          <div class="progress-thumb" id="progress-thumb" style="left:40%"></div>
+        </div>
+        <div class="progress-times">
+          <span id="time-current">0:00</span>
+          <span id="time-total">0:00</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="controls-card">
+      <div class="control-row">
+        <div class="control-label-wrap">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+          </svg>
+          <span class="control-label">Volumen</span>
+        </div>
+        <span class="control-value" id="volume-display">70%</span>
+      </div>
+      <div class="slider-wrap">
+        <input type="range" min="0" max="100" value="70" class="slider" id="volume-slider" aria-label="Volumen">
+      </div>
+      <div class="divider"></div>
+      <div class="control-row">
+        <div class="control-label-wrap">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M9 21h6M12 3a6 6 0 0 1 4.47 10.12A4 4 0 0 0 15 17H9a4 4 0 0 0-1.47-3.88A6 6 0 0 1 12 3z"/>
+          </svg>
+          <span class="control-label">Iluminación</span>
+        </div>
+        <span class="control-value accent" id="lights-display">Cálida</span>
+      </div>
+      <div class="lights-row">
+        <button class="light-btn" data-preset="off">Apagado</button>
+        <button class="light-btn active" data-preset="warm">Cálida</button>
+        <button class="light-btn" data-preset="soft">Suave</button>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ═══════════════════════════════════
+       VISTA: DISCOS
+  ════════════════════════════════════ -->
+  <div id="view-discos" class="view">
+
+    <header class="app-header">
+      <div class="app-title">
+        <p class="app-label">Biblioteca</p>
+        <h1 class="app-name serif">Mis <em>Discos</em></h1>
+      </div>
+    </header>
+
+    <div class="albums-list" id="albums-list">
+      <!-- Se llena desde JS -->
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════
+       VISTA: AGREGAR
+  ════════════════════════════════════ -->
+  <div id="view-agregar" class="view">
+
+    <header class="app-header">
+      <div class="app-title">
+        <p class="app-label">Nueva música</p>
+        <h1 class="app-name serif">Agregar <em>Álbum</em></h1>
+      </div>
+    </header>
+
+    <div class="upload-section">
+
+      <div class="upload-card">
+        <div class="upload-icon-wrap">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+        </div>
+        <p class="upload-title">Subir canciones</p>
+        <p class="upload-sub">MP3, FLAC, WAV u OGG</p>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="album-name">Nombre del álbum</label>
+        <input
+          type="text"
+          id="album-name"
+          class="form-input"
+          placeholder="ej. Taylor Swift — Folklore"
+          autocomplete="off"
+        >
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="track-files">Canciones</label>
+        <label class="file-label" for="track-files">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M9 18V5l12-2v13"/>
+            <circle cx="6" cy="18" r="3"/>
+            <circle cx="18" cy="16" r="3"/>
+          </svg>
+          <span id="file-label-text">Elegir archivos de audio</span>
+          <input
+            type="file"
+            id="track-files"
+            accept=".mp3,.flac,.wav,.ogg"
+            multiple
+            style="display:none"
+          >
+        </label>
+      </div>
+
+      <!-- Lista de archivos seleccionados -->
+      <div id="file-list" class="file-list" style="display:none"></div>
+
+      <!-- Feedback de subida -->
+      <div id="upload-feedback" class="upload-feedback" style="display:none"></div>
+
+      <button class="upload-btn" id="upload-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        Subir álbum
+      </button>
+
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════
+       NAV BOTTOM (compartida)
+  ════════════════════════════════════ -->
   <nav class="bottom-nav" aria-label="Navegación principal">
-    <button class="nav-item active" aria-label="Inicio">
+    <button class="nav-item active" data-view="home" aria-label="Inicio">
       <div class="nav-icon-wrap active">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
           <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
@@ -118,7 +222,7 @@
       </div>
       <span class="nav-label">Inicio</span>
     </button>
-    <button class="nav-item" aria-label="Mis discos">
+    <button class="nav-item" data-view="discos" aria-label="Mis discos">
       <div class="nav-icon-wrap">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <circle cx="12" cy="12" r="9"/>
@@ -127,7 +231,7 @@
       </div>
       <span class="nav-label">Discos</span>
     </button>
-    <button class="nav-item" aria-label="Agregar álbum">
+    <button class="nav-item" data-view="agregar" aria-label="Agregar álbum">
       <div class="nav-icon-wrap">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
           <path d="M12 5v14M5 12h14"/>

@@ -10,26 +10,35 @@ const state = {
   trackName: '—',
   trackSub: '—',
   discTag: '—',
-  raggingVolume: false,
+  draggingVolume: false,
+  currentView: 'home',
+  initialized: false,
 }
 
 // ── Referencias al DOM ───────────────────────
 const $ = id => document.getElementById(id)
 
 const els = {
-  trackName:     $('track-name'),
-  trackSub:      $('track-sub'),
-  discTag:       $('disc-tag'),
-  disc:          $('disc'),
-  playBtn:       $('play-btn'),
-  playIcon:      $('play-icon'),
-  progressFill:  $('progress-fill'),
-  progressThumb: $('progress-thumb'),
-  timeCurrent:   $('time-current'),
-  timeTotal:     $('time-total'),
-  volumeSlider:  $('volume-slider'),
-  volumeDisplay: $('volume-display'),
-  lightsDisplay: $('lights-display'),
+  trackName:      $('track-name'),
+  trackSub:       $('track-sub'),
+  discTag:        $('disc-tag'),
+  disc:           $('disc'),
+  playBtn:        $('play-btn'),
+  playIcon:       $('play-icon'),
+  progressFill:   $('progress-fill'),
+  progressThumb:  $('progress-thumb'),
+  timeCurrent:    $('time-current'),
+  timeTotal:      $('time-total'),
+  volumeSlider:   $('volume-slider'),
+  volumeDisplay:  $('volume-display'),
+  lightsDisplay:  $('lights-display'),
+  albumsList:     $('albums-list'),
+  albumName:      $('album-name'),
+  trackFiles:     $('track-files'),
+  fileLabelText:  $('file-label-text'),
+  fileList:       $('file-list'),
+  uploadFeedback: $('upload-feedback'),
+  uploadBtn:      $('upload-btn'),
 }
 
 // ── SVG icons ───────────────────────────────
@@ -37,25 +46,51 @@ const ICON_PAUSE = `
   <rect x="6" y="4" width="4" height="16" rx="1.5"/>
   <rect x="14" y="4" width="4" height="16" rx="1.5"/>
 `
-const ICON_PLAY = `
-  <path d="M8 5.14v14l11-7-11-7z"/>
-`
+const ICON_PLAY = `<path d="M8 5.14v14l11-7-11-7z"/>`
 
-// ── Labels de luces ─────────────────────────
-const LIGHT_LABELS = {
-  off:  'Apagado',
-  warm: 'Cálida',
-  soft: 'Suave',
+const LIGHT_LABELS = { off: 'Apagado', warm: 'Cálida', soft: 'Suave' }
+
+// ══════════════════════════════════════════════
+// NAVEGACIÓN
+// ══════════════════════════════════════════════
+function navigateTo(view) {
+  // Ocultar todas las vistas
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'))
+  // Mostrar la vista elegida
+  document.getElementById('view-' + view).classList.add('active')
+
+  // Actualizar nav
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    const isActive = btn.dataset.view === view
+    btn.classList.toggle('active', isActive)
+    btn.querySelector('.nav-icon-wrap').classList.toggle('active', isActive)
+  })
+
+  state.currentView = view
+
+  // Si navegamos a Discos, cargamos la lista
+  if (view === 'discos') loadAlbums()
 }
 
-// ── Cargar estado desde la API ───────────────
+// Eventos de la nav
+document.querySelectorAll('.nav-item').forEach(btn => {
+  btn.addEventListener('click', () => navigateTo(btn.dataset.view))
+})
+
+// ══════════════════════════════════════════════
+// VISTA: INICIO — estado y reproducción
+// ══════════════════════════════════════════════
 async function loadStatus() {
   try {
     const res = await fetch('/api/status')
     if (!res.ok) throw new Error('Error de red')
     const data = await res.json()
 
-    state.playing   = data.playing !== null
+    // Actualizo en el primer load, se me estaba re trabando wachin 
+    if (!state.initialized) {
+       state.playing = data.playing !== null
+    }
+    state.initialized = true
     state.volume    = data.volume
     state.lights    = data.lights
     state.trackName = data.playing
@@ -69,34 +104,24 @@ async function loadStatus() {
       : '—'
 
     renderAll()
-
   } catch (err) {
-    console.warn('No se pudo cargar el estado:', err)
+    console.warn('Sin conexión:', err)
     els.trackName.textContent = 'Sin conexión'
     els.trackSub.textContent  = 'Verificá la red'
   }
 }
 
-// ── Render general ───────────────────────────
 function renderAll() {
-  // Track info
   els.trackName.textContent = state.trackName
   els.trackSub.textContent  = state.trackSub
   els.discTag.textContent   = state.discTag
-
-  // Play/pause
-  els.playIcon.innerHTML = state.playing ? ICON_PAUSE : ICON_PLAY
+  els.playIcon.innerHTML    = state.playing ? ICON_PAUSE : ICON_PLAY
   els.playBtn.setAttribute('aria-label', state.playing ? 'Pausar' : 'Reproducir')
-
-  // Disco — girar o no según estado
   els.disc.classList.toggle('spinning', state.playing)
-
-  // Volumen y luces
   if (!state.draggingVolume) renderVolume(state.volume)
   renderLights(state.lights)
 }
 
-// ── Render volumen ───────────────────────────
 function renderVolume(val) {
   els.volumeDisplay.textContent = val + '%'
   els.volumeSlider.value = val
@@ -109,7 +134,6 @@ function renderVolume(val) {
   )`
 }
 
-// ── Render luces ─────────────────────────────
 function renderLights(preset) {
   els.lightsDisplay.textContent = LIGHT_LABELS[preset] || preset
   document.querySelectorAll('.light-btn').forEach(btn => {
@@ -117,37 +141,7 @@ function renderLights(preset) {
   })
 }
 
-// ── API: cambiar volumen ─────────────────────
-async function setVolume(val) {
-  state.volume = val
-  renderVolume(val)
-  try {
-    await fetch('/api/volume', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ volume: val }),
-    })
-  } catch (err) {
-    console.warn('Error guardando volumen:', err)
-  }
-}
-
-// ── API: cambiar luces ───────────────────────
-async function setLights(preset) {
-  state.lights = preset
-  renderLights(preset)
-  try {
-    await fetch('/api/lights', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ preset }),
-    })
-  } catch (err) {
-    console.warn('Error guardando luces:', err)
-  }
-}
-
-// ── Evento: play/pause ───────────────────────
+// Play/pause
 els.playBtn.addEventListener('click', () => {
   state.playing = !state.playing
   els.playIcon.innerHTML = state.playing ? ICON_PAUSE : ICON_PLAY
@@ -155,9 +149,9 @@ els.playBtn.addEventListener('click', () => {
   els.disc.classList.toggle('spinning', state.playing)
 })
 
-// ── Evento: volumen slider ───────────────────
-els.volumeSlider.addEventListener('mousedown', () => { state.draggingVolume = true })
-els.volumeSlider.addEventListener('touchstart', () => { state.draggingVolume = true })
+// Volumen — sin bug de reset
+els.volumeSlider.addEventListener('mousedown',  () => { state.draggingVolume = true })
+els.volumeSlider.addEventListener('touchstart', () => { state.draggingVolume = true }, { passive: true })
 
 els.volumeSlider.addEventListener('input', function () {
   renderVolume(parseInt(this.value))
@@ -168,22 +162,193 @@ els.volumeSlider.addEventListener('change', function () {
   setVolume(parseInt(this.value))
 })
 
-els.volumeSlider.addEventListener('mouseup', () => { state.draggingVolume = false })
+els.volumeSlider.addEventListener('mouseup',  () => { state.draggingVolume = false })
 els.volumeSlider.addEventListener('touchend', () => { state.draggingVolume = false })
-// ── Evento: luces ────────────────────────────
+
+// Luces
 document.querySelectorAll('.light-btn').forEach(btn => {
   btn.addEventListener('click', () => setLights(btn.dataset.preset))
 })
 
-// ── Utilidades ───────────────────────────────
+// APIs
+async function setVolume(val) {
+  state.volume = val
+  try {
+    await fetch('/api/volume', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ volume: val }),
+    })
+  } catch (err) { console.warn('Error volumen:', err) }
+}
+
+async function setLights(preset) {
+  state.lights = preset
+  renderLights(preset)
+  try {
+    await fetch('/api/lights', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ preset }),
+    })
+  } catch (err) { console.warn('Error luces:', err) }
+}
+
+// ══════════════════════════════════════════════
+// VISTA: DISCOS — librería de álbumes
+// ══════════════════════════════════════════════
+async function loadAlbums() {
+  els.albumsList.innerHTML = ''
+
+  try {
+    const res = await fetch('/api/albums')
+    const albums = await res.json()
+
+    if (albums.length === 0) {
+      els.albumsList.innerHTML = `
+        <div class="albums-empty">
+          <div class="albums-empty-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="12" r="9"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </div>
+          <p class="albums-empty-title">Todavía no hay discos</p>
+          <p class="albums-empty-sub">Subí tu primer álbum desde<br>la sección Agregar</p>
+        </div>
+      `
+      return
+    }
+
+    albums.forEach(album => {
+      const card = document.createElement('div')
+      card.className = 'album-card'
+      card.innerHTML = `
+        <div class="album-disc">
+          <div class="album-disc-dot"></div>
+        </div>
+        <div class="album-info">
+          <p class="album-name">${album.name}</p>
+          <p class="album-tracks">${album.tracks} ${album.tracks === 1 ? 'pista' : 'pistas'}</p>
+        </div>
+        <svg class="album-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M9 18l6-6-6-6"/>
+        </svg>
+      `
+      els.albumsList.appendChild(card)
+    })
+
+  } catch (err) {
+    els.albumsList.innerHTML = `
+      <div class="albums-empty">
+        <p class="albums-empty-title">Error cargando álbumes</p>
+        <p class="albums-empty-sub">Verificá la conexión</p>
+      </div>
+    `
+  }
+}
+
+// ══════════════════════════════════════════════
+// VISTA: AGREGAR — subir álbum
+// ══════════════════════════════════════════════
+
+// Mostrar archivos seleccionados
+els.trackFiles.addEventListener('change', function () {
+  const files = Array.from(this.files)
+
+  if (files.length === 0) {
+    els.fileLabelText.textContent = 'Elegir archivos de audio'
+    els.fileList.style.display = 'none'
+    return
+  }
+
+  els.fileLabelText.textContent = `${files.length} archivo${files.length > 1 ? 's' : ''} seleccionado${files.length > 1 ? 's' : ''}`
+
+  els.fileList.style.display = 'block'
+  els.fileList.innerHTML = files.map(f => `
+    <div class="file-item">
+      <svg class="file-item-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 18V5l12-2v13"/>
+        <circle cx="6" cy="18" r="3"/>
+        <circle cx="18" cy="16" r="3"/>
+      </svg>
+      ${f.name}
+    </div>
+  `).join('')
+})
+
+// Subir álbum
+els.uploadBtn.addEventListener('click', async () => {
+  const albumName = els.albumName.value.trim()
+  const files     = els.trackFiles.files
+
+  // Validaciones
+  if (!albumName) {
+    showFeedback('Escribí el nombre del álbum primero', 'error')
+    els.albumName.focus()
+    return
+  }
+  if (files.length === 0) {
+    showFeedback('Seleccioná al menos un archivo de audio', 'error')
+    return
+  }
+
+  // Deshabilitar botón mientras sube
+  els.uploadBtn.disabled = true
+  els.uploadBtn.textContent = 'Subiendo...'
+
+  try {
+    const formData = new FormData()
+    formData.append('album_name', albumName)
+    Array.from(files).forEach(f => formData.append('tracks', f))
+
+    const res  = await fetch('/api/upload', { method: 'POST', body: formData })
+    const data = await res.json()
+
+    if (data.ok) {
+      showFeedback(`✓ "${albumName}" subido — ${data.tracks_saved} pista${data.tracks_saved !== 1 ? 's' : ''}`, 'success')
+      // Limpiar formulario
+      els.albumName.value       = ''
+      els.trackFiles.value      = ''
+      els.fileLabelText.textContent = 'Elegir archivos de audio'
+      els.fileList.style.display   = 'none'
+    } else {
+      showFeedback('Error: ' + (data.error || 'algo salió mal'), 'error')
+    }
+  } catch (err) {
+    showFeedback('Error de conexión al subir', 'error')
+  } finally {
+    els.uploadBtn.disabled    = false
+    els.uploadBtn.innerHTML   = `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      Subir álbum
+    `
+  }
+})
+
+function showFeedback(msg, type) {
+  els.uploadFeedback.textContent  = msg
+  els.uploadFeedback.className    = `upload-feedback ${type}`
+  els.uploadFeedback.style.display = 'block'
+  setTimeout(() => {
+    els.uploadFeedback.style.display = 'none'
+  }, 4000)
+}
+
+// ══════════════════════════════════════════════
+// UTILIDADES
+// ══════════════════════════════════════════════
 function capitalize(str) {
   if (!str) return ''
   return str.charAt(0).toUpperCase() + str.slice(1)
 }
 
-// ── Polling cada 3 segundos ──────────────────
-// Cuando llegue el NFC real, esto va a actualizar la UI automáticamente
-setInterval(loadStatus, 3000)
-
-// ── Init ─────────────────────────────────────
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
 loadStatus()
+setInterval(loadStatus, 3000)
