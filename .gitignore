@@ -1,0 +1,18 @@
+# Entorno virtual
+venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Música (pesa mucho y tiene derechos de autor)
+albums/
+
+# Configuración con datos reales (UIDs de tags)
+# config.json   ← lo dejamos SIN comentar por ahora, subimos el de ejemplo
+
+# Sistema
+.DS_Store
+*.log
