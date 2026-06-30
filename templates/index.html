@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Eco Records</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <div class="status-bar">
+    <span class="time">9:41</span>
+    <div class="status-icons">
+      <svg width="16" height="12" viewBox="0 0 24 18" fill="none" aria-hidden="true">
+        <path d="M12 14a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z" fill="currentColor"/>
+        <path d="M7.5 10.5C8.8 9.2 10.3 8.5 12 8.5s3.2.7 4.5 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+        <path d="M4 7C6.2 4.8 8.9 3.5 12 3.5S17.8 4.8 20 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.35"/>
+      </svg>
+      <svg width="22" height="11" viewBox="0 0 28 14" fill="none" aria-hidden="true">
+        <rect x="1" y="1" width="22" height="12" rx="3" stroke="currentColor" stroke-width="1.5"/>
+        <rect x="3" y="3" width="16" height="8" rx="1.5" fill="currentColor"/>
+        <path d="M24 4.5v5a2 2 0 0 0 0-5z" fill="currentColor" opacity="0.4"/>
+      </svg>
+    </div>
+  </div>
+
+  <header class="app-header">
+    <div class="app-title">
+      <p class="app-label">Tu música</p>
+      <h1 class="app-name serif">Eco <em>Records</em></h1>
+    </div>
+    <button class="settings-btn" aria-label="Ajustes">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+      </svg>
+    </button>
+  </header>
+
+  <section class="disc-section" aria-label="Disco actual">
+    <div class="disc-shadow"></div>
+    <div class="disc" id="disc">
+      <div class="disc-grooves"></div>
+      <div class="disc-shine"></div>
+      <div class="disc-label">
+        <div class="disc-dot"></div>
+        <span class="disc-tag" id="disc-tag">—</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="track-section">
+    <div class="track-info">
+      <div class="track-text">
+        <h2 class="track-name serif" id="track-name">Cargando...</h2>
+        <p class="track-sub" id="track-sub">—</p>
+      </div>
+      <button class="play-btn" id="play-btn" aria-label="Pausar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" id="play-icon">
+          <rect x="6" y="4" width="4" height="16" rx="1.5"/>
+          <rect x="14" y="4" width="4" height="16" rx="1.5"/>
+        </svg>
+      </button>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill" style="width:40%"></div>
+        <div class="progress-thumb" id="progress-thumb" style="left:40%"></div>
+      </div>
+      <div class="progress-times">
+        <span id="time-current">0:00</span>
+        <span id="time-total">0:00</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="controls-card">
+    <div class="control-row">
+      <div class="control-label-wrap">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+        </svg>
+        <span class="control-label">Volumen</span>
+      </div>
+      <span class="control-value" id="volume-display">70%</span>
+    </div>
+    <div class="slider-wrap">
+      <input type="range" min="0" max="100" value="70" class="slider" id="volume-slider" aria-label="Volumen">
+    </div>
+    <div class="divider"></div>
+    <div class="control-row">
+      <div class="control-label-wrap">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M9 21h6M12 3a6 6 0 0 1 4.47 10.12A4 4 0 0 0 15 17H9a4 4 0 0 0-1.47-3.88A6 6 0 0 1 12 3z"/>
+        </svg>
+        <span class="control-label">Iluminación</span>
+      </div>
+      <span class="control-value accent" id="lights-display">Cálida</span>
+    </div>
+    <div class="lights-row">
+      <button class="light-btn" data-preset="off">Apagado</button>
+      <button class="light-btn active" data-preset="warm">Cálida</button>
+      <button class="light-btn" data-preset="soft">Suave</button>
+    </div>
+  </section>
+
+  <nav class="bottom-nav" aria-label="Navegación principal">
+    <button class="nav-item active" aria-label="Inicio">
+      <div class="nav-icon-wrap active">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+        </svg>
+      </div>
+      <span class="nav-label">Inicio</span>
+    </button>
+    <button class="nav-item" aria-label="Mis discos">
+      <div class="nav-icon-wrap">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+      </div>
+      <span class="nav-label">Discos</span>
+    </button>
+    <button class="nav-item" aria-label="Agregar álbum">
+      <div class="nav-icon-wrap">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+      </div>
+      <span class="nav-label">Agregar</span>
+    </button>
+  </nav>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
