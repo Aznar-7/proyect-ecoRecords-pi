@@ -716,3 +716,14 @@ renderInitial()
 loadStatus()
 setInterval(loadStatus, 2000)
 //setInterval(checkPendingUid, 1500)
+
+
+
+// ── Service Worker ───────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/static/sw.js')
+      .then(() => console.log('[ECO] SW registrado'))
+      .catch(err => console.warn('[ECO] SW error:', err))
+  })
+}

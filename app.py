@@ -362,6 +362,15 @@ def start_download():
 def download_progress():
     return jsonify(download_status)
 
+# ── PWA ──────────────────────────────────────
+@app.route("/static/sw.js")
+def service_worker():
+    from flask import send_from_directory
+    response = send_from_directory("static", "sw.js")
+    response.headers["Content-Type"] = "application/javascript"
+    response.headers["Service-Worker-Allowed"] = "/"
+    return response
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

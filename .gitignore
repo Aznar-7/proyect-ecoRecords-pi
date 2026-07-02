@@ -1,6 +1,12 @@
 # Entorno virtual
 venv/
 
+# Cloudflare (credenciales del túnel - no subir)
+.cloudflared/
+
+# Scripts de prueba
+test_nfc.py
+
 # Python
 __pycache__/
 *.pyc
