@@ -82,7 +82,7 @@ Una PWA instalable (sin necesidad de tienda de apps) para administrar el disposi
 - [x] Backend Flask con API REST (`/api/status`, `/api/volume`, `/api/lights`)
 - [x] Interfaz PWA con diseño propio (sin frameworks, SVG icons, tipografía custom)
 - [x] Rotación del disco animada, sincronizada con play/pause
-- [ ] Integración del lector NFC (PN532) — *lector en camino*
+- [x] Integración del lector NFC (PN532)
 - [ ] Audio real vía I2S (MAX98357A)
 - [ ] Control del motor paso a paso
 - [ ] Anillo de luces WS2812B
