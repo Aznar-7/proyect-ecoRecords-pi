@@ -316,7 +316,6 @@ async function loadStatus() {
       ? data.playing.slice(0, 5).toUpperCase()
       : '—'
 
-    checkPendingUid(data.pending_uid)
     renderAll()
   } catch (err) {
     console.warn('Sin conexión:', err)
@@ -324,7 +323,7 @@ async function loadStatus() {
     els.trackSub.textContent  = 'Verificá la red'
   }
 }
-
+qq
 function renderInitial() {
   els.trackName.textContent = 'Sin disco apoyado'
   els.trackSub.textContent  = 'Acercá un disco para empezar'
@@ -347,34 +346,25 @@ function animateDiscChange(newAlbum, callback) {
 
   lastAlbum = newAlbum
 
-  // Pausar spin durante la transición
-  disc.style.animationPlayState = 'paused'
-
-  // Fase 1: encogerse y desvanecerse
-  disc.style.transition = 'transform 0.3s ease-in, opacity 0.25s ease'
-  disc.style.transform  = 'scale(0.1)'
+  // Fase 1: disco actual sale hacia la derecha
+  disc.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 1, 1), opacity 0.3s ease'
+  disc.style.transform  = 'translateX(80px) scale(0.9)'
   disc.style.opacity    = '0'
 
   setTimeout(() => {
-    // Actualizar contenido
     callback()
 
-    // Reset sin transición
+    // Nuevo disco aparece desde la izquierda
     disc.style.transition = 'none'
-    disc.style.transform  = 'scale(0.1)'
+    disc.style.transform  = 'translateX(-80px) scale(0.9)'
     disc.style.opacity    = '0'
 
     disc.offsetHeight // forzar reflow
 
-    // Fase 2: crecer y aparecer
-    disc.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.4, 0.64, 1), opacity 0.3s ease'
-    disc.style.transform  = 'scale(1)'
+    // Entra al centro
+    disc.style.transition = 'transform 0.35s cubic-bezier(0, 0, 0.2, 1), opacity 0.3s ease'
+    disc.style.transform  = 'translateX(0) scale(1)'
     disc.style.opacity    = '1'
-
-    // Retomar spin si corresponde
-    setTimeout(() => {
-      disc.style.animationPlayState = state.playing ? 'running' : 'paused'
-    }, 400)
 
   }, 300)
 }
@@ -714,5 +704,5 @@ function capitalize(str) {
 // ══════════════════════════════════════════════
 renderInitial()
 loadStatus()
-setInterval(loadStatus, 2000)
-//setInterval(checkPendingUid, 1500)
+setInterval(loadStatus, 1000)
+setInterval(checkPendingUid, 1500)

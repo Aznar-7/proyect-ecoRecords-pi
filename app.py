@@ -60,7 +60,8 @@ def status():
         "is_playing":   now.get("playing", False),
         "volume":       config.get("volume", 70),
         "lights":       config.get("lights", "warm"),
-        "albums":       list(config.get("albums", {}).values())
+        "albums":       list(config.get("albums", {}).values()),
+        "pending_uid":  config.get("pending_uid", None),
     })
 
 # ── API: listar álbumes ───────────────────────
@@ -89,18 +90,48 @@ def list_tracks(album_id):
     album_path = os.path.join(ALBUMS_PATH, album_id)
     if not os.path.exists(album_path):
         return jsonify([])
+
     tracks = sorted([
         f for f in os.listdir(album_path)
         if f.endswith(('.mp3', '.flac', '.wav', '.ogg'))
     ])
+
     result = []
     for t in tracks:
-        # Limpiar nombre: sacar extensión y número de pista
-        name = os.path.splitext(t)[0]
-        name = name.lstrip('0123456789.- ')
-        result.append({ "name": name, "filename": t, "duration": None })
-    return jsonify(result)
+        name = os.path.splitext(t)[0]      # sacar extensión
+        name = name.lstrip('0123456789')    # sacar número inicial
+        name = name.lstrip(' .-_')         # sacar separadores
 
+        # Limpiar el nombre del artista que YouTube agrega
+        # "Elvis Presley - Can't Help Falling In Love (Official Video)" → "Can't Help Falling In Love"
+        # Patrones comunes: "Artista - Canción", "Artista - Canción (Official Video)", etc.
+        if ' - ' in name:
+            parts = name.split(' - ', 1)
+            # Si la segunda parte parece el título real (más corta o sin "Official"), usarla
+            name = parts[1]
+
+        # Limpiar sufijos comunes de YouTube
+        for suffix in [
+            ' (Official Video)', ' (Official Music Video)', ' (Official Audio)',
+            ' (Lyrics)', ' (Lyric Video)', ' (Audio)', ' (HD)',
+            ' [Official Video]', ' [Official Audio]', ' [Lyrics]',
+            ' (Remastered)', ' (Remastered 2009)', ' (Remastered 2011)',
+            ' (Remastered 1999)', ' (2008 Remastered)', ' (4K)',
+            ' (4K Remaster)', ' (Official)', ' (Video)',
+        ]:
+            name = name.replace(suffix, '').replace(suffix.lower(), '')
+
+        # Limpiar paréntesis vacíos que puedan quedar
+        import re
+        name = re.sub(r'\s*\([^)]*\)\s*$', '', name).strip()
+
+        result.append({
+            "name":     name.strip(),
+            "filename": t,
+            "duration": None
+        })
+
+    return jsonify(result)
 
 # ── API: cambiar volumen ──────────────────────
 @app.route("/api/volume", methods=["POST"])

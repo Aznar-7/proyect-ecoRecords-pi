@@ -850,9 +850,25 @@ button:active {
   height: 120px;
 }
 
+.disc-medium {
+  width: 150px;
+  height: 150px;
+}
+
 .album-detail-count {
   font-size: 13px;
   color: var(--text-muted);
+}
+
+/* ── Detail header ─────────────────────────── */
+.detail-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.detail-header-text {
+  flex: 1;
 }
 
 /* ── Tracks list ───────────────────────────── */
@@ -1259,4 +1275,40 @@ button:active {
   font-size: 11px;
   color: var(--text-muted);
   margin-top: 6px;
+}
+
+
+/* ── Sticky headers en vistas con scroll ───── */
+#view-discos .app-header,
+#view-agregar .app-header,
+#view-album-detail .detail-header {
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 10;
+  padding-bottom: 8px;
+}
+
+/* ── Scroll suave en listas ────────────────── */
+.albums-list,
+.tracks-list {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Track item sin duración (limpieza) ─────── */
+.track-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--bg-card);
+  border-radius: 14px;
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+  transition: background 0.15s;
+}
+
+.track-item:active {
+  background: var(--bg-muted);
 }
