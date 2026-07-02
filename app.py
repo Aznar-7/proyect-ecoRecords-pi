@@ -26,6 +26,7 @@ def status():
     config     = read_config()
     now        = config.get("now_playing", {})
     album_name = now.get("album")
+    track_name = now.get("track_name")
 
     # Nombre legible del álbum
     display_name = None
@@ -35,6 +36,7 @@ def status():
     return jsonify({
         "playing":      display_name,
         "raw_album":    album_name,
+        "track_name":   track_name,
         "track":        now.get("track", 0),
         "total_tracks": now.get("total", 0),
         "is_playing":   now.get("playing", False),

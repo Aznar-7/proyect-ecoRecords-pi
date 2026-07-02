@@ -91,13 +91,15 @@ async function loadStatus() {
     state.track       = data.track || 0
     state.totalTracks = data.total_tracks || 0
 
-    state.trackName = data.playing
+    state.trackName = data.track_name
+      ? data.track_name
+      : data.playing
       ? data.playing
       : 'Sin disco apoyado'
     state.trackSub  = data.playing && data.total_tracks > 0
-      ? `Pista ${data.track} de ${data.total_tracks}`
+      ? `${data.playing} · Pista ${data.track} de ${data.total_tracks}`
       : data.playing
-      ? 'Reproduciendo'
+      ? data.playing
       : 'Acercá un disco para empezar'
     state.discTag   = data.playing
       ? data.playing.slice(0, 5).toUpperCase()
@@ -442,4 +444,4 @@ function capitalize(str) {
 // INIT
 // ══════════════════════════════════════════════
 loadStatus()
-setInterval(loadStatus, 3000)
+setInterval(loadStatus, 1000)

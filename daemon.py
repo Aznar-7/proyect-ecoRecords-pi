@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """
-ECO Records — Daemon principal
-Loop: detecta tag NFC → identifica álbum → actualiza estado en config.json
+ECO Records — Daemon principal v1.2
+Detecta disco NFC → identifica álbum → reporta canción actual
 """
 
 import json
 import os
 import time
-import subprocess
 import board
 import busio
 from adafruit_pn532.i2c import PN532_I2C
@@ -18,23 +17,28 @@ CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
 ALBUMS_PATH = os.path.join(BASE_DIR, "albums")
 
 # ── Estado global ────────────────────────────
-current_uid     = None
-current_album   = None
-current_process = None  # proceso de audio (cuando llegue el MAX98357A)
+current_uid   = None
+current_album = None
+current_track = 0
 
 # ── Config ───────────────────────────────────
 def read_config():
     with open(CONFIG_PATH, "r") as f:
         return json.load(f)
 
-def write_state(album, track, total, playing):
-    """Escribe el estado actual en config.json para que Flask lo lea"""
+def write_state(album, track_index, track_name, total, playing):
+    """
+    Escribe el estado completo en config.json.
+    track_index → número de pista (1-based)
+    track_name  → nombre legible de la canción actual
+    """
     config = read_config()
     config["now_playing"] = {
-        "album": album,
-        "track": track,
-        "total": total,
-        "playing": playing
+        "album":      album,
+        "track":      track_index,
+        "track_name": track_name,
+        "total":      total,
+        "playing":    playing
     }
     with open(CONFIG_PATH, "w") as f:
         json.dump(config, f, indent=2)
@@ -52,7 +56,7 @@ def init_nfc():
 def uid_to_str(uid):
     return ":".join([format(b, "02X") for b in uid])
 
-# ── Audio ─────────────────────────────────────
+# ── Pistas ───────────────────────────────────
 def get_tracks(album_name):
     """Devuelve lista ordenada de pistas del álbum"""
     album_path = os.path.join(ALBUMS_PATH, album_name)
@@ -63,51 +67,57 @@ def get_tracks(album_name):
         if f.endswith(('.mp3', '.flac', '.wav', '.ogg'))
     ])
 
-def play_album(album_name):
-    global current_process
-    tracks = get_tracks(album_name)
+def clean_track_name(filename):
+    """
+    Convierte '01 - Billie Jean.mp3' → 'Billie Jean'
+    Saca número de pista, guiones y extensión
+    """
+    name = os.path.splitext(filename)[0]  # sacar extensión
+    name = name.lstrip('0123456789')       # sacar número inicial
+    name = name.lstrip(' .-_')            # sacar separadores
+    return name.strip()
 
+# ── Reproducción ─────────────────────────────
+def play_album(album_name):
+    global current_track
+
+    tracks = get_tracks(album_name)
     if not tracks:
         print(f"[ECO] ⚠ No hay pistas en: {album_name}")
-        write_state(album_name, 0, 0, False)
+        write_state(album_name, 0, None, 0, False)
         return
 
-    total = len(tracks)
-    print(f"[ECO] ▶ Reproduciendo: {album_name} ({total} pistas)")
+    total      = len(tracks)
+    current_track = 1
+    track_name = clean_track_name(tracks[0])  # primera pista
 
-    # Actualizar estado — sonando pista 1
-    write_state(album_name, 1, total, True)
+    album_display = album_name.replace("-", " ").replace("_", " ").title()
+    print(f"[ECO] ▶ {track_name} — {album_display}")
 
-    # Cuando llegue el MAX98357A, descomentar esto:
-    # album_path = os.path.join(ALBUMS_PATH, album_name)
-    # track_path = os.path.join(album_path, tracks[0])
-    # current_process = subprocess.Popen(["mpg123", "-q", track_path])
+    write_state(album_name, 1, track_name, total, True)
 
-    for i, track in enumerate(tracks, 1):
-        print(f"[ECO]   Pista {i}/{total}: {track}")
+    # Debug: mostrar todas las pistas
+    for i, t in enumerate(tracks, 1):
+        print(f"[ECO]   {i}/{total}: {clean_track_name(t)}")
+
+    # Cuando llegue el MAX98357A, acá va el subprocess de mpg123
 
 def stop_playback():
-    global current_process
+    global current_track
+    current_track = 0
     print("[ECO] ⏹ Reproducción detenida")
-    write_state(None, 0, 0, False)
-
-    # Cuando llegue el MAX98357A, descomentar esto:
-    # if current_process:
-    #     current_process.terminate()
-    #     current_process = None
+    write_state(None, 0, None, 0, False)
 
 # ── Loop principal ────────────────────────────
 def main():
     global current_uid, current_album
 
     print("[ECO] ══════════════════════════════")
-    print("[ECO]  Eco Records — Daemon v1.1")
+    print("[ECO]  Eco Records — Daemon v1.2")
     print("[ECO] ══════════════════════════════")
 
     pn532 = init_nfc()
-
-    # Resetear estado al arrancar
-    write_state(None, 0, 0, False)
+    write_state(None, 0, None, 0, False)
 
     print("[ECO] Esperando discos...\n")
 
@@ -130,7 +140,7 @@ def main():
                         play_album(album)
                     else:
                         print(f"[ECO] UID no registrado: {uid}")
-                        write_state(None, 0, 0, False)
+                        write_state(None, 0, None, 0, False)
                         current_album = None
 
             else:
