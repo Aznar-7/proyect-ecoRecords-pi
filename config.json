@@ -1,7 +1,13 @@
 {
   "albums": {
-    "53:33:6A:05": "minecraft"
+    "53:33:6A:05": "thriller"
   },
-  "volume": 70,
-  "lights": "warm"
+  "volume": 18,
+  "lights": "off",
+  "now_playing": {
+    "album": "thriller",
+    "track": 1,
+    "total": 9,
+    "playing": true
+  }
 }

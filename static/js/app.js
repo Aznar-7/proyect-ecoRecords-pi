@@ -10,6 +10,8 @@ const state = {
   trackName: '—',
   trackSub: '—',
   discTag: '—',
+  track: 0,
+  totalTracks: 0,
   draggingVolume: false,
   currentView: 'home',
   initialized: false,
@@ -25,6 +27,8 @@ const els = {
   disc:           $('disc'),
   playBtn:        $('play-btn'),
   playIcon:       $('play-icon'),
+  prevBtn:        $('prev-btn'),
+  nextBtn:        $('next-btn'),
   progressFill:   $('progress-fill'),
   progressThumb:  $('progress-thumb'),
   timeCurrent:    $('time-current'),
@@ -54,31 +58,23 @@ const LIGHT_LABELS = { off: 'Apagado', warm: 'Cálida', soft: 'Suave' }
 // NAVEGACIÓN
 // ══════════════════════════════════════════════
 function navigateTo(view) {
-  // Ocultar todas las vistas
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'))
-  // Mostrar la vista elegida
   document.getElementById('view-' + view).classList.add('active')
-
-  // Actualizar nav
   document.querySelectorAll('.nav-item').forEach(btn => {
     const isActive = btn.dataset.view === view
     btn.classList.toggle('active', isActive)
     btn.querySelector('.nav-icon-wrap').classList.toggle('active', isActive)
   })
-
   state.currentView = view
-
-  // Si navegamos a Discos, cargamos la lista
   if (view === 'discos') loadAlbums()
 }
 
-// Eventos de la nav
 document.querySelectorAll('.nav-item').forEach(btn => {
   btn.addEventListener('click', () => navigateTo(btn.dataset.view))
 })
 
 // ══════════════════════════════════════════════
-// VISTA: INICIO — estado y reproducción
+// VISTA: INICIO
 // ══════════════════════════════════════════════
 async function loadStatus() {
   try {
@@ -86,19 +82,23 @@ async function loadStatus() {
     if (!res.ok) throw new Error('Error de red')
     const data = await res.json()
 
-    // Actualizo en el primer load, se me estaba re trabando wachin 
     if (!state.initialized) {
-       state.playing = data.playing !== null
+      state.playing = data.is_playing || false
     }
     state.initialized = true
-    state.volume    = data.volume
-    state.lights    = data.lights
+    state.volume      = data.volume
+    state.lights      = data.lights
+    state.track       = data.track || 0
+    state.totalTracks = data.total_tracks || 0
+
     state.trackName = data.playing
-      ? capitalize(data.playing) + ' — Vol. 1'
-      : 'Sin disco'
-    state.trackSub  = data.playing
+      ? data.playing
+      : 'Sin disco apoyado'
+    state.trackSub  = data.playing && data.total_tracks > 0
       ? `Pista ${data.track} de ${data.total_tracks}`
-      : 'Apoyá un disco para empezar'
+      : data.playing
+      ? 'Reproduciendo'
+      : 'Acercá un disco para empezar'
     state.discTag   = data.playing
       ? data.playing.slice(0, 5).toUpperCase()
       : '—'
@@ -120,6 +120,10 @@ function renderAll() {
   els.disc.classList.toggle('spinning', state.playing)
   if (!state.draggingVolume) renderVolume(state.volume)
   renderLights(state.lights)
+
+  // Deshabilitar skip si no hay nada sonando
+  els.prevBtn.disabled = !state.playing
+  els.nextBtn.disabled = !state.playing
 }
 
 function renderVolume(val) {
@@ -141,15 +145,30 @@ function renderLights(preset) {
   })
 }
 
-// Play/pause
+// ── Eventos: play/pause ──────────────────────
 els.playBtn.addEventListener('click', () => {
   state.playing = !state.playing
   els.playIcon.innerHTML = state.playing ? ICON_PAUSE : ICON_PLAY
   els.playBtn.setAttribute('aria-label', state.playing ? 'Pausar' : 'Reproducir')
   els.disc.classList.toggle('spinning', state.playing)
+  els.prevBtn.disabled = !state.playing
+  els.nextBtn.disabled = !state.playing
 })
 
-// Volumen — sin bug de reset
+// ── Eventos: skip ────────────────────────────
+els.prevBtn.addEventListener('click', () => {
+  if (!state.playing || !state.totalTracks) return
+  state.track = Math.max(1, state.track - 1)
+  els.trackSub.textContent = `Pista ${state.track} de ${state.totalTracks}`
+})
+
+els.nextBtn.addEventListener('click', () => {
+  if (!state.playing || !state.totalTracks) return
+  state.track = Math.min(state.totalTracks, state.track + 1)
+  els.trackSub.textContent = `Pista ${state.track} de ${state.totalTracks}`
+})
+
+// ── Eventos: volumen ─────────────────────────
 els.volumeSlider.addEventListener('mousedown',  () => { state.draggingVolume = true })
 els.volumeSlider.addEventListener('touchstart', () => { state.draggingVolume = true }, { passive: true })
 
@@ -165,12 +184,12 @@ els.volumeSlider.addEventListener('change', function () {
 els.volumeSlider.addEventListener('mouseup',  () => { state.draggingVolume = false })
 els.volumeSlider.addEventListener('touchend', () => { state.draggingVolume = false })
 
-// Luces
+// ── Eventos: luces ───────────────────────────
 document.querySelectorAll('.light-btn').forEach(btn => {
   btn.addEventListener('click', () => setLights(btn.dataset.preset))
 })
 
-// APIs
+// ── APIs ─────────────────────────────────────
 async function setVolume(val) {
   state.volume = val
   try {
@@ -195,13 +214,13 @@ async function setLights(preset) {
 }
 
 // ══════════════════════════════════════════════
-// VISTA: DISCOS — librería de álbumes
+// VISTA: DISCOS
 // ══════════════════════════════════════════════
 async function loadAlbums() {
   els.albumsList.innerHTML = ''
 
   try {
-    const res = await fetch('/api/albums')
+    const res    = await fetch('/api/albums')
     const albums = await res.json()
 
     if (albums.length === 0) {
@@ -209,8 +228,7 @@ async function loadAlbums() {
         <div class="albums-empty">
           <div class="albums-empty-icon">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <circle cx="12" cy="12" r="9"/>
-              <circle cx="12" cy="12" r="3"/>
+              <circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/>
             </svg>
           </div>
           <p class="albums-empty-title">Todavía no hay discos</p>
@@ -235,6 +253,8 @@ async function loadAlbums() {
           <path d="M9 18l6-6-6-6"/>
         </svg>
       `
+      // Click abre el detalle del álbum
+      card.addEventListener('click', () => showAlbumDetail(album))
       els.albumsList.appendChild(card)
     })
 
@@ -248,41 +268,95 @@ async function loadAlbums() {
   }
 }
 
-// ══════════════════════════════════════════════
-// VISTA: AGREGAR — subir álbum
-// ══════════════════════════════════════════════
+// ── Detalle de álbum ─────────────────────────
+async function showAlbumDetail(album) {
+  // Crear vista de detalle dinámicamente
+  let detail = $('view-album-detail')
+  if (!detail) {
+    detail = document.createElement('div')
+    detail.id = 'view-album-detail'
+    detail.className = 'view'
+    document.querySelector('body').insertBefore(detail, document.querySelector('.bottom-nav'))
+  }
 
-// Mostrar archivos seleccionados
+  detail.innerHTML = `
+    <header class="app-header">
+      <button class="back-btn" id="back-btn" aria-label="Volver">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M19 12H5M12 5l-7 7 7 7"/>
+        </svg>
+      </button>
+      <div class="app-title">
+        <p class="app-label">Álbum</p>
+        <h1 class="app-name serif">${album.name}</h1>
+      </div>
+    </header>
+
+    <div class="album-detail-disc">
+      <div class="disc disc-small">
+        <div class="disc-grooves"></div>
+        <div class="disc-label">
+          <div class="disc-dot"></div>
+          <span class="disc-tag">${album.name.slice(0, 5).toUpperCase()}</span>
+        </div>
+      </div>
+      <p class="album-detail-count">${album.tracks} pistas</p>
+    </div>
+
+    <div class="tracks-list" id="tracks-list">
+      <div class="tracks-loading">Cargando pistas...</div>
+    </div>
+  `
+
+  navigateTo('album-detail')
+
+  // Cargar pistas del álbum
+  try {
+    const res    = await fetch(`/api/albums/${album.id}/tracks`)
+    const tracks = await res.json()
+    const list   = $('tracks-list')
+
+    list.innerHTML = tracks.map((track, i) => `
+      <div class="track-item">
+        <span class="track-num">${String(i + 1).padStart(2, '0')}</span>
+        <span class="track-item-name">${track.name}</span>
+        <span class="track-item-duration">${track.duration || '—'}</span>
+      </div>
+    `).join('')
+  } catch (err) {
+    $('tracks-list').innerHTML = '<div class="tracks-loading">Error cargando pistas</div>'
+  }
+
+  // Botón volver
+  $('back-btn').addEventListener('click', () => navigateTo('discos'))
+}
+
+// ══════════════════════════════════════════════
+// VISTA: AGREGAR
+// ══════════════════════════════════════════════
 els.trackFiles.addEventListener('change', function () {
   const files = Array.from(this.files)
-
   if (files.length === 0) {
     els.fileLabelText.textContent = 'Elegir archivos de audio'
     els.fileList.style.display = 'none'
     return
   }
-
   els.fileLabelText.textContent = `${files.length} archivo${files.length > 1 ? 's' : ''} seleccionado${files.length > 1 ? 's' : ''}`
-
   els.fileList.style.display = 'block'
   els.fileList.innerHTML = files.map(f => `
     <div class="file-item">
       <svg class="file-item-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M9 18V5l12-2v13"/>
-        <circle cx="6" cy="18" r="3"/>
-        <circle cx="18" cy="16" r="3"/>
+        <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
       </svg>
       ${f.name}
     </div>
   `).join('')
 })
 
-// Subir álbum
 els.uploadBtn.addEventListener('click', async () => {
   const albumName = els.albumName.value.trim()
   const files     = els.trackFiles.files
 
-  // Validaciones
   if (!albumName) {
     showFeedback('Escribí el nombre del álbum primero', 'error')
     els.albumName.focus()
@@ -293,9 +367,8 @@ els.uploadBtn.addEventListener('click', async () => {
     return
   }
 
-  // Deshabilitar botón mientras sube
-  els.uploadBtn.disabled = true
-  els.uploadBtn.textContent = 'Subiendo...'
+  els.uploadBtn.disabled     = true
+  els.uploadBtn.textContent  = 'Subiendo...'
 
   try {
     const formData = new FormData()
@@ -307,19 +380,18 @@ els.uploadBtn.addEventListener('click', async () => {
 
     if (data.ok) {
       showFeedback(`✓ "${albumName}" subido — ${data.tracks_saved} pista${data.tracks_saved !== 1 ? 's' : ''}`, 'success')
-      // Limpiar formulario
-      els.albumName.value       = ''
-      els.trackFiles.value      = ''
+      els.albumName.value           = ''
+      els.trackFiles.value          = ''
       els.fileLabelText.textContent = 'Elegir archivos de audio'
-      els.fileList.style.display   = 'none'
+      els.fileList.style.display    = 'none'
     } else {
       showFeedback('Error: ' + (data.error || 'algo salió mal'), 'error')
     }
   } catch (err) {
     showFeedback('Error de conexión al subir', 'error')
   } finally {
-    els.uploadBtn.disabled    = false
-    els.uploadBtn.innerHTML   = `
+    els.uploadBtn.disabled   = false
+    els.uploadBtn.innerHTML  = `
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
         <polyline points="17 8 12 3 7 8"/>
@@ -331,12 +403,10 @@ els.uploadBtn.addEventListener('click', async () => {
 })
 
 function showFeedback(msg, type) {
-  els.uploadFeedback.textContent  = msg
-  els.uploadFeedback.className    = `upload-feedback ${type}`
+  els.uploadFeedback.textContent   = msg
+  els.uploadFeedback.className     = `upload-feedback ${type}`
   els.uploadFeedback.style.display = 'block'
-  setTimeout(() => {
-    els.uploadFeedback.style.display = 'none'
-  }, 4000)
+  setTimeout(() => { els.uploadFeedback.style.display = 'none' }, 4000)
 }
 
 // ══════════════════════════════════════════════

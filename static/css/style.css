@@ -289,6 +289,36 @@ button:active {
   font-weight: 400;
 }
 
+/* ── Player controls ───────────────────────── */
+.player-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.ctrl-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg-muted);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.ctrl-btn:hover {
+  background: var(--border);
+}
+
+.ctrl-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
 .play-btn {
   width: 46px;
   height: 46px;
@@ -795,4 +825,92 @@ button:active {
 @media (max-height: 700px) {
   .disc { width: 170px; height: 170px; }
   .disc-section { min-height: 180px; }
+}
+
+/* ── Back button ───────────────────────────── */
+.back-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
+  background: var(--bg-muted);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.back-btn:hover {
+  background: var(--border);
+}
+
+/* ── Album detail ──────────────────────────── */
+.album-detail-disc {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 0 16px;
+  gap: 12px;
+}
+
+.disc-small {
+  width: 120px;
+  height: 120px;
+}
+
+.album-detail-count {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* ── Tracks list ───────────────────────────── */
+.tracks-list {
+  padding: 0 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.tracks-loading {
+  text-align: center;
+  padding: 40px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.track-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--bg-card);
+  border-radius: 14px;
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+}
+
+.track-num {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  width: 20px;
+  flex-shrink: 0;
+}
+
+.track-item-name {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.track-item-duration {
+  font-size: 11px;
+  color: var(--text-muted);
+  flex-shrink: 0;
 }

@@ -23,14 +23,24 @@ def home():
 # ── API: estado actual ────────────────────────
 @app.route("/api/status")
 def status():
-    config = read_config()
+    config     = read_config()
+    now        = config.get("now_playing", {})
+    album_name = now.get("album")
+
+    # Nombre legible del álbum
+    display_name = None
+    if album_name:
+        display_name = album_name.replace("-", " ").replace("_", " ").title()
+
     return jsonify({
-        "playing": "minecraft",
-        "track": 3,
-        "total_tracks": 8,
-        "volume": config["volume"],
-        "lights": config["lights"],
-        "albums": list(config["albums"].values())
+        "playing":      display_name,
+        "raw_album":    album_name,
+        "track":        now.get("track", 0),
+        "total_tracks": now.get("total", 0),
+        "is_playing":   now.get("playing", False),
+        "volume":       config.get("volume", 70),
+        "lights":       config.get("lights", "warm"),
+        "albums":       list(config.get("albums", {}).values())
     })
 
 # ── API: listar álbumes ───────────────────────
@@ -46,16 +56,36 @@ def list_albums():
                     if f.endswith(('.mp3', '.flac', '.wav', '.ogg'))
                 ]
                 albums.append({
-                    "id": folder,
-                    "name": folder.replace("-", " ").replace("_", " ").title(),
+                    "id":     folder,
+                    "name":   folder.replace("-", " ").replace("_", " ").title(),
                     "tracks": len(tracks)
                 })
     return jsonify(albums)
 
+
+# ── API: pistas de un álbum ───────────────────
+@app.route("/api/albums/<album_id>/tracks")
+def list_tracks(album_id):
+    album_path = os.path.join(ALBUMS_PATH, album_id)
+    if not os.path.exists(album_path):
+        return jsonify([])
+    tracks = sorted([
+        f for f in os.listdir(album_path)
+        if f.endswith(('.mp3', '.flac', '.wav', '.ogg'))
+    ])
+    result = []
+    for t in tracks:
+        # Limpiar nombre: sacar extensión y número de pista
+        name = os.path.splitext(t)[0]
+        name = name.lstrip('0123456789.- ')
+        result.append({ "name": name, "filename": t, "duration": None })
+    return jsonify(result)
+
+
 # ── API: cambiar volumen ──────────────────────
 @app.route("/api/volume", methods=["POST"])
 def set_volume():
-    data = request.get_json()
+    data   = request.get_json()
     volume = int(data.get("volume", 70))
     config = read_config()
     config["volume"] = volume
@@ -65,7 +95,7 @@ def set_volume():
 # ── API: cambiar luces ────────────────────────
 @app.route("/api/lights", methods=["POST"])
 def set_lights():
-    data = request.get_json()
+    data   = request.get_json()
     preset = data.get("preset", "warm")
     config = read_config()
     config["lights"] = preset
@@ -76,15 +106,14 @@ def set_lights():
 @app.route("/api/upload", methods=["POST"])
 def upload_album():
     album_name = request.form.get("album_name", "").strip()
-    files = request.files.getlist("tracks")
+    files      = request.files.getlist("tracks")
 
     if not album_name:
-        return jsonify({"ok": False, "error": "Nombre de álbum requerido"}), 400
+        return jsonify({"ok": False, "error": "Nombre requerido"}), 400
     if not files:
-        return jsonify({"ok": False, "error": "No se enviaron archivos"}), 400
+        return jsonify({"ok": False, "error": "Sin archivos"}), 400
 
-    # Limpiar nombre: minúsculas, guiones en vez de espacios
-    safe_name = album_name.lower().replace(" ", "-")
+    safe_name  = album_name.lower().replace(" ", "-")
     album_path = os.path.join(ALBUMS_PATH, safe_name)
     os.makedirs(album_path, exist_ok=True)
 
@@ -95,10 +124,10 @@ def upload_album():
             saved.append(f.filename)
 
     return jsonify({
-        "ok": True,
-        "album": safe_name,
+        "ok":           True,
+        "album":        safe_name,
         "tracks_saved": len(saved),
-        "files": saved
+        "files":        saved
     })
 
 if __name__ == "__main__":
