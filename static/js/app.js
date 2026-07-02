@@ -217,7 +217,17 @@ async function setLights(preset) {
 // VISTA: DISCOS
 // ══════════════════════════════════════════════
 async function loadAlbums() {
-  els.albumsList.innerHTML = ''
+  els.albumsList.innerHTML = `
+    ${[1,2,3].map(() => `
+      <div class="skeleton-card">
+        <div class="skeleton skeleton-disc"></div>
+        <div style="flex:1">
+          <div class="skeleton skeleton-text wide"></div>
+          <div class="skeleton skeleton-text narrow"></div>
+        </div>
+      </div>
+    `).join('')}
+  `
 
   try {
     const res    = await fetch('/api/albums')
@@ -237,7 +247,8 @@ async function loadAlbums() {
       `
       return
     }
-
+    
+    els.albumsList.innerHTML = ''
     albums.forEach(album => {
       const card = document.createElement('div')
       card.className = 'album-card'
@@ -312,6 +323,17 @@ async function showAlbumDetail(album) {
 
   // Cargar pistas del álbum
   try {
+    // Mostrar skeleton de pistas
+    $('tracks-list').innerHTML = `
+      ${[1,2,3,4,5].map((_, i) => `
+        <div class="track-item">
+          <div class="skeleton" style="width:20px; height:14px; border-radius:4px;"></div>
+          <div class="skeleton skeleton-text" style="flex:1; width:${60 + i * 8}%"></div>
+          <div class="skeleton" style="width:30px; height:12px; border-radius:4px;"></div>
+        </div>
+      `).join('')}
+    `
+
     const res    = await fetch(`/api/albums/${album.id}/tracks`)
     const tracks = await res.json()
     const list   = $('tracks-list')
@@ -326,7 +348,6 @@ async function showAlbumDetail(album) {
   } catch (err) {
     $('tracks-list').innerHTML = '<div class="tracks-loading">Error cargando pistas</div>'
   }
-
   // Botón volver
   $('back-btn').addEventListener('click', () => navigateTo('discos'))
 }

@@ -70,35 +70,25 @@ button:active {
   flex-direction: column;
   flex: 1;
   overflow-y: auto;
-  padding-bottom: 80px;
+  padding-bottom: 80px; 
+  opacity: 0;
+  transform: translateY(8px);
 }
 
 .view.active {
   display: flex;
+  animation: view-in 0.22s ease forwards;
 }
 
-/* ── Status bar ────────────────────────────── */
-.status-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 26px 0;
-  color: var(--text-primary);
-  flex-shrink: 0;
-}
-
-.time {
-  font-size: 13px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.2px;
-}
-
-.status-icons {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--text-primary);
+@keyframes view-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ── Header ────────────────────────────────── */
@@ -913,4 +903,97 @@ button:active {
   font-size: 11px;
   color: var(--text-muted);
   flex-shrink: 0;
+}
+
+/* ── Skeleton loading ──────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-muted) 25%,
+    var(--border)   50%,
+    var(--bg-muted) 75%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+  border-radius: 8px;
+}
+
+.skeleton-text {
+  height: 14px;
+  margin-bottom: 8px;
+}
+
+.skeleton-text.wide  { width: 80%; }
+.skeleton-text.medium { width: 55%; }
+.skeleton-text.narrow { width: 35%; }
+
+.skeleton-disc {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.skeleton-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-card);
+  padding: 16px 18px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* ── Transición de nav items ───────────────── */
+.nav-item {
+  transition: opacity 0.2s;
+}
+
+.nav-icon-wrap {
+  transition: background 0.2s, transform 0.15s;
+}
+
+.nav-item:active .nav-icon-wrap {
+  transform: scale(0.9);
+}
+
+/* ── Touch feedback en cards ───────────────── */
+.album-card {
+  transition: transform 0.15s, box-shadow 0.15s;
+  cursor: pointer;
+}
+
+.album-card:active {
+  transform: scale(0.98);
+  box-shadow: none;
+}
+
+.track-item {
+  transition: background 0.15s;
+}
+
+.track-item:active {
+  background: var(--bg-muted);
+}
+
+/* ── Smooth scroll ─────────────────────────── */
+.view {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── iOS específico ────────────────────────── */
+@supports (-webkit-touch-callout: none) {
+  .bottom-nav {
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  }
+  .view {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  }
 }
