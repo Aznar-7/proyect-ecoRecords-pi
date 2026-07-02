@@ -15,6 +15,23 @@ def write_config(data):
     with open(CONFIG_PATH, "w") as f:
         json.dump(data, f, indent=2)
 
+def reset_now_playing():
+    """Resetea el estado de reproducción al arrancar Flask"""
+    try:
+        config = read_config()
+        config["now_playing"] = {
+            "album": None,
+            "track": 0,
+            "track_name": None,
+            "total": 0,
+            "playing": False
+        }
+        write_config(config)
+    except Exception:
+        pass
+
+reset_now_playing()
+
 # ── Página principal ──────────────────────────
 @app.route("/")
 def home():

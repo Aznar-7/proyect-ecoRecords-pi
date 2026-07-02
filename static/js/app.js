@@ -113,6 +113,14 @@ async function loadStatus() {
   }
 }
 
+function renderInitial() {
+  els.trackName.textContent = 'Sin disco apoyado'
+  els.trackSub.textContent  = 'Acercá un disco para empezar'
+  els.discTag.textContent   = '—'
+  renderVolume(70)
+  renderLights('warm')
+}
+
 function renderAll() {
   els.trackName.textContent = state.trackName
   els.trackSub.textContent  = state.trackSub
@@ -443,5 +451,6 @@ function capitalize(str) {
 // ══════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════
+renderInitial()
 loadStatus()
 setInterval(loadStatus, 1000)

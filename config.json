@@ -2,13 +2,13 @@
   "albums": {
     "53:33:6A:05": "thriller"
   },
-  "volume": 15,
-  "lights": "off",
+  "volume": 41,
+  "lights": "warm",
   "now_playing": {
-    "album": "thriller",
-    "track": 1,
-    "track_name": "Wanna Be Startin' Somethin'",
-    "total": 9,
-    "playing": true
+    "album": null,
+    "track": 0,
+    "track_name": null,
+    "total": 0,
+    "playing": false
   }
 }
