@@ -6,10 +6,10 @@
   "volume": 41,
   "lights": "warm",
   "now_playing": {
-    "album": "love-letters",
-    "track": 1,
-    "track_name": "Elvis Presley - Can't Help Falling In Love (Official Audio)",
-    "total": 12,
-    "playing": true
+    "album": null,
+    "track": 0,
+    "track_name": null,
+    "total": 0,
+    "playing": false
   }
 }

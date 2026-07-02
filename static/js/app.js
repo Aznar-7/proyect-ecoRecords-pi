@@ -76,6 +76,36 @@ document.querySelectorAll('.nav-item').forEach(btn => {
 // ══════════════════════════════════════════════
 // VISTA: INICIO
 // ══════════════════════════════════════════════
+
+// ══════════════════════════════════════════════
+// MODAL: AJUSTES
+// ══════════════════════════════════════════════
+document.getElementById('settings-btn').addEventListener('click', () => {
+  document.getElementById('settings-volume-label').textContent = state.volume + '%'
+  document.getElementById('settings-modal').style.display = 'flex'
+})
+
+document.getElementById('settings-close').addEventListener('click', () => {
+  document.getElementById('settings-modal').style.display = 'none'
+})
+
+document.getElementById('shutdown-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('shutdown-btn')
+  btn.textContent   = 'Apagando...'
+  btn.disabled      = true
+
+  try {
+    await fetch('/api/shutdown', { method: 'POST' })
+    btn.textContent = '✓ Apagado — esperá 10 seg y desenchufá'
+    setTimeout(() => {
+      document.getElementById('settings-modal').style.display = 'none'
+    }, 8000)
+  } catch (err) {
+    btn.textContent  = 'Error al apagar'
+    btn.disabled     = false
+  }
+})
+
 // ══════════════════════════════════════════════
 // MODAL: APRENDER DISCO NUEVO
 // ══════════════════════════════════════════════

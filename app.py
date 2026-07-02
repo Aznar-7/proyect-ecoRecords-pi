@@ -187,5 +187,28 @@ def discard_pending():
     return jsonify({"ok": True})
 
 
+# ── API: apagado seguro ───────────────────────
+@app.route("/api/shutdown", methods=["POST"])
+def shutdown():
+    import subprocess
+    write_config_shutdown()
+    subprocess.Popen(["sudo", "shutdown", "-h", "now"])
+    return jsonify({"ok": True, "message": "Apagando en 5 segundos..."})
+
+def write_config_shutdown():
+    """Limpia el estado antes de apagar"""
+    try:
+        config = read_config()
+        config["now_playing"] = {
+            "album": None,
+            "track": 0,
+            "track_name": None,
+            "total": 0,
+            "playing": False
+        }
+        write_config(config)
+    except Exception:
+        pass
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
