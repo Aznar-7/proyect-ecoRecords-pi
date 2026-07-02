@@ -4,6 +4,7 @@ import os
 
 app = Flask(__name__)
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.json")
 ALBUMS_PATH = os.path.join(os.path.dirname(__file__), "albums")
 
@@ -209,6 +210,127 @@ def write_config_shutdown():
         write_config(config)
     except Exception:
         pass
+
+
+# ── Descarga via YouTube ──────────────────────
+import subprocess
+import threading
+
+download_status = {
+    "running": False,
+    "progress": 0,
+    "message": "",
+    "error": None,
+    "album": None
+}
+
+def run_download(url, album_name):
+    global download_status
+    safe_name  = album_name.lower().replace(" ", "-")
+    album_path = os.path.join(ALBUMS_PATH, safe_name)
+    os.makedirs(album_path, exist_ok=True)
+
+    download_status.update({
+        "running": True,
+        "progress": 0,
+        "message": "Iniciando descarga...",
+        "error": None,
+        "album": safe_name
+    })
+
+    try:
+        python = os.path.join(BASE_DIR, "venv", "bin", "python3")
+        cmd = [
+            python ,"-m", "yt_dlp",
+            "-x", "--audio-format", "mp3",
+            "--audio-quality", "0",
+            "-o", os.path.join(album_path, "%(playlist_index)02d - %(title)s.%(ext)s"),
+            "--newline",
+            url
+        ]
+
+        print(f"[ECO] Corriendo: {' '.join(cmd)}")
+
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            cwd=BASE_DIR
+        )
+
+        for line in process.stdout:
+            line = line.strip()
+            if not line:
+                continue
+
+            # Parsear progreso de yt-dlp
+            if "[download]" in line and "%" in line:
+                try:
+                    pct = float(line.split("%")[0].split()[-1])
+                    download_status["progress"] = round(pct)
+                    download_status["message"]  = f"Descargando... {round(pct)}%"
+                except Exception:
+                    pass
+            elif "[ExtractAudio]" in line:
+                download_status["message"] = "Convirtiendo a MP3..."
+            elif "[ffmpeg]" in line:
+                download_status["message"] = "Procesando audio..."
+            elif "Downloading item" in line:
+                download_status["message"] = line
+                download_status["progress"] = 0
+
+        process.wait()
+
+        print(f"[ECO] yt-dlp returncode: {process.returncode}")
+
+        if process.returncode == 0:
+            download_status.update({
+                "running":  False,
+                "progress": 100,
+                "message":  "¡Listo!",
+                "error":    None
+            })
+        else:
+            download_status.update({
+                "running": False,
+                "message": "Error en la descarga",
+                "error":   "yt-dlp terminó con error"
+            })
+
+    except Exception as e:
+        download_status.update({
+            "running": False,
+            "message": "Error",
+            "error":   str(e)
+        })
+
+@app.route("/api/download", methods=["POST"])
+def start_download():
+    global download_status
+
+    if download_status["running"]:
+        return jsonify({"ok": False, "error": "Ya hay una descarga en curso"}), 400
+
+    data       = request.get_json()
+    url        = data.get("url", "").strip()
+    album_name = data.get("album_name", "").strip()
+
+    if not url:
+        return jsonify({"ok": False, "error": "URL requerida"}), 400
+    if not album_name:
+        return jsonify({"ok": False, "error": "Nombre de álbum requerido"}), 400
+
+    thread = threading.Thread(target=run_download, args=(url, album_name))
+    thread.daemon = True
+    thread.start()
+
+    return jsonify({"ok": True, "message": "Descarga iniciada"})
+
+@app.route("/api/download/status")
+def download_progress():
+    return jsonify(download_status)
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

@@ -132,7 +132,7 @@
 
   </div>
 
-  <!-- ═══════════════════════════════════
+<!-- ═══════════════════════════════════
        VISTA: AGREGAR
   ════════════════════════════════════ -->
   <div id="view-agregar" class="view">
@@ -144,65 +144,121 @@
       </div>
     </header>
 
-    <div class="upload-section">
-
-      <div class="upload-card">
-        <div class="upload-icon-wrap">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="17 8 12 3 7 8"/>
-            <line x1="12" y1="3" x2="12" y2="15"/>
-          </svg>
-        </div>
-        <p class="upload-title">Subir canciones</p>
-        <p class="upload-sub">MP3, FLAC, WAV u OGG</p>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label" for="album-name">Nombre del álbum</label>
-        <input
-          type="text"
-          id="album-name"
-          class="form-input"
-          placeholder="ej. Taylor Swift — Folklore"
-          autocomplete="off"
-        >
-      </div>
-
-      <div class="form-group">
-        <label class="form-label" for="track-files">Canciones</label>
-        <label class="file-label" for="track-files">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-            <path d="M9 18V5l12-2v13"/>
-            <circle cx="6" cy="18" r="3"/>
-            <circle cx="18" cy="16" r="3"/>
-          </svg>
-          <span id="file-label-text">Elegir archivos de audio</span>
-          <input
-            type="file"
-            id="track-files"
-            accept=".mp3,.flac,.wav,.ogg"
-            multiple
-            style="display:none"
-          >
-        </label>
-      </div>
-
-      <!-- Lista de archivos seleccionados -->
-      <div id="file-list" class="file-list" style="display:none"></div>
-
-      <!-- Feedback de subida -->
-      <div id="upload-feedback" class="upload-feedback" style="display:none"></div>
-
-      <button class="upload-btn" id="upload-btn">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+    <!-- TABS -->
+    <div class="add-tabs">
+      <button class="add-tab active" data-tab="youtube">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M23 7s-.3-2-1.2-2.8c-1.1-1.2-2.4-1.2-3-1.3C16.6 2.8 12 2.8 12 2.8s-4.6 0-6.8.1c-.6.1-1.9.1-3 1.3C1.3 5 1 7 1 7S.7 9.1.7 11.3v2c0 2.1.3 4.2.3 4.2s.3 2 1.2 2.8c1.1 1.2 2.6 1.1 3.3 1.2C7.3 21.7 12 21.7 12 21.7s4.6 0 6.8-.2c.6-.1 1.9-.1 3-1.3.9-.8 1.2-2.8 1.2-2.8s.3-2.1.3-4.2v-2C23.3 9.1 23 7 23 7zM9.7 15.5V8.3l6.5 3.6-6.5 3.6z"/>
+        </svg>
+        Link de YouTube
+      </button>
+      <button class="add-tab" data-tab="archivo">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
           <polyline points="17 8 12 3 7 8"/>
           <line x1="12" y1="3" x2="12" y2="15"/>
         </svg>
-        Subir álbum
+        Subir archivo
       </button>
+    </div>
 
+    <!-- TAB: YOUTUBE -->
+    <div class="add-content" id="tab-youtube">
+      <div class="upload-section">
+
+        <div class="form-group">
+          <label class="form-label" for="yt-album-name">Nombre del álbum</label>
+          <input
+            type="text"
+            id="yt-album-name"
+            class="form-input"
+            placeholder="ej. Love Letters"
+            autocomplete="off"
+          >
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="yt-url">Link de YouTube</label>
+          <input
+            type="url"
+            id="yt-url"
+            class="form-input"
+            placeholder="https://youtube.com/playlist?list=..."
+            autocomplete="off"
+          >
+          <p class="form-hint">Podés pegar un video o una playlist completa</p>
+        </div>
+
+        <!-- Progreso -->
+        <div id="yt-progress" style="display:none">
+          <div class="download-progress-wrap">
+            <div class="download-progress-bar">
+              <div class="download-progress-fill" id="yt-progress-fill"></div>
+            </div>
+            <p class="download-progress-msg" id="yt-progress-msg">Iniciando...</p>
+          </div>
+        </div>
+
+        <!-- Feedback -->
+        <div id="yt-feedback" class="upload-feedback" style="display:none"></div>
+
+        <button class="upload-btn" id="yt-download-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M23 7s-.3-2-1.2-2.8c-1.1-1.2-2.4-1.2-3-1.3C16.6 2.8 12 2.8 12 2.8s-4.6 0-6.8.1c-.6.1-1.9.1-3 1.3C1.3 5 1 7 1 7S.7 9.1.7 11.3v2c0 2.1.3 4.2.3 4.2s.3 2 1.2 2.8c1.1 1.2 2.6 1.1 3.3 1.2C7.3 21.7 12 21.7 12 21.7s4.6 0 6.8-.2c.6-.1 1.9-.1 3-1.3.9-.8 1.2-2.8 1.2-2.8s.3-2.1.3-4.2v-2C23.3 9.1 23 7 23 7zM9.7 15.5V8.3l6.5 3.6-6.5 3.6z"/>
+          </svg>
+          Descargar álbum
+        </button>
+
+      </div>
+    </div>
+
+    <!-- TAB: ARCHIVO -->
+    <div class="add-content" id="tab-archivo" style="display:none">
+      <div class="upload-section">
+
+        <div class="form-group">
+          <label class="form-label" for="album-name">Nombre del álbum</label>
+          <input
+            type="text"
+            id="album-name"
+            class="form-input"
+            placeholder="ej. Taylor Swift — Folklore"
+            autocomplete="off"
+          >
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="track-files">Canciones</label>
+          <label class="file-label" for="track-files">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+              <path d="M9 18V5l12-2v13"/>
+              <circle cx="6" cy="18" r="3"/>
+              <circle cx="18" cy="16" r="3"/>
+            </svg>
+            <span id="file-label-text">Elegir archivos de audio</span>
+            <input
+              type="file"
+              id="track-files"
+              accept=".mp3,.flac,.wav,.ogg"
+              multiple
+              style="display:none"
+            >
+          </label>
+        </div>
+
+        <div id="file-list" class="file-list" style="display:none"></div>
+        <div id="upload-feedback" class="upload-feedback" style="display:none"></div>
+
+        <button class="upload-btn" id="upload-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          Subir álbum
+        </button>
+
+      </div>
     </div>
 
   </div>

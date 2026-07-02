@@ -107,6 +107,108 @@ document.getElementById('shutdown-btn').addEventListener('click', async () => {
 })
 
 // ══════════════════════════════════════════════
+// VISTA: AGREGAR — tabs
+// ══════════════════════════════════════════════
+document.querySelectorAll('.add-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.add-tab').forEach(t => t.classList.remove('active'))
+    tab.classList.add('active')
+    const target = tab.dataset.tab
+    document.getElementById('tab-youtube').style.display  = target === 'youtube'  ? 'block' : 'none'
+    document.getElementById('tab-archivo').style.display  = target === 'archivo'  ? 'block' : 'none'
+  })
+})
+
+// ── Descarga via YouTube ─────────────────────
+let downloadPolling = null
+
+document.getElementById('yt-download-btn').addEventListener('click', async () => {
+  const url       = document.getElementById('yt-url').value.trim()
+  const albumName = document.getElementById('yt-album-name').value.trim()
+
+  if (!albumName) {
+    document.getElementById('yt-album-name').focus()
+    return
+  }
+  if (!url) {
+    document.getElementById('yt-url').focus()
+    return
+  }
+
+  const btn      = document.getElementById('yt-download-btn')
+  btn.disabled   = true
+  btn.textContent = 'Iniciando...'
+
+  document.getElementById('yt-progress').style.display  = 'block'
+  document.getElementById('yt-feedback').style.display  = 'none'
+
+  try {
+    const res  = await fetch('/api/download', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, album_name: albumName })
+    })
+    const data = await res.json()
+
+    if (!data.ok) {
+      showYtFeedback(data.error, 'error')
+      btn.disabled    = false
+      btn.textContent = 'Descargar álbum'
+      return
+    }
+
+    // Polling de progreso
+    downloadPolling = setInterval(async () => {
+      try {
+        const r    = await fetch('/api/download/status')
+        const stat = await r.json()
+
+        document.getElementById('yt-progress-fill').style.width = stat.progress + '%'
+        document.getElementById('yt-progress-msg').textContent  = stat.message
+
+        if (!stat.running) {
+          clearInterval(downloadPolling)
+          downloadPolling = null
+          btn.disabled    = false
+          btn.innerHTML   = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M23 7s-.3-2-1.2-2.8c-1.1-1.2-2.4-1.2-3-1.3C16.6 2.8 12 2.8 12 2.8s-4.6 0-6.8.1c-.6.1-1.9.1-3 1.3C1.3 5 1 7 1 7S.7 9.1.7 11.3v2c0 2.1.3 4.2.3 4.2s.3 2 1.2 2.8c1.1 1.2 2.6 1.1 3.3 1.2C7.3 21.7 12 21.7 12 21.7s4.6 0 6.8-.2c.6-.1 1.9-.1 3-1.3.9-.8 1.2-2.8 1.2-2.8s.3-2.1.3-4.2v-2C23.3 9.1 23 7 23 7zM9.7 15.5V8.3l6.5 3.6-6.5 3.6z"/>
+            </svg>
+            Descargar álbum`
+
+          if (stat.error) {
+            showYtFeedback('Error: ' + stat.error, 'error')
+          } else {
+            showYtFeedback('✓ ' + stat.message + ' El álbum ya está en tu biblioteca.', 'success')
+            document.getElementById('yt-url').value       = ''
+            document.getElementById('yt-album-name').value = ''
+            document.getElementById('yt-progress').style.display = 'none'
+          }
+        }
+      } catch (err) {
+        console.warn('Error polling descarga:', err)
+      }
+    }, 1000)
+
+  } catch (err) {
+    showYtFeedback('Error de conexión', 'error')
+    btn.disabled    = false
+    btn.textContent = 'Descargar álbum'
+  }
+})
+
+function showYtFeedback(msg, type) {
+  const el      = document.getElementById('yt-feedback')
+  el.textContent  = msg
+  el.className    = `upload-feedback ${type}`
+  el.style.display = 'block'
+  if (type === 'success') {
+    setTimeout(() => { el.style.display = 'none' }, 5000)
+  }
+}
+
+
+// ══════════════════════════════════════════════
 // MODAL: APRENDER DISCO NUEVO
 // ══════════════════════════════════════════════
 let pendingUid = null

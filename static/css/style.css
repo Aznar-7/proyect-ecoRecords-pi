@@ -1189,3 +1189,74 @@ button:active {
   text-align: center;
   margin-top: 4px;
 }
+
+
+/* ── Add tabs ──────────────────────────────── */
+.add-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 16px 18px 0;
+}
+
+.add-tab {
+  flex: 1;
+  height: 40px;
+  border-radius: var(--radius-btn);
+  background: var(--bg-muted);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+
+.add-tab.active {
+  background: var(--text-primary);
+  border-color: var(--text-primary);
+  color: var(--bg);
+}
+
+.add-content {
+  flex: 1;
+}
+
+/* ── Download progress ─────────────────────── */
+.download-progress-wrap {
+  background: var(--bg-card);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border);
+  padding: 16px 18px;
+}
+
+.download-progress-bar {
+  height: 6px;
+  background: var(--bg-muted);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.download-progress-fill {
+  height: 6px;
+  background: linear-gradient(90deg, var(--accent), #D4A87A);
+  border-radius: 3px;
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+.download-progress-msg {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* ── Form hint ─────────────────────────────── */
+.form-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
