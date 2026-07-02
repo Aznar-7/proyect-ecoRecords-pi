@@ -46,12 +46,21 @@ def write_state(album, track_index, track_name, total, playing):
 # ── NFC ──────────────────────────────────────
 def init_nfc():
     print("[ECO] Inicializando lector NFC...")
-    i2c   = busio.I2C(board.SCL, board.SDA)
-    pn532 = PN532_I2C(i2c, debug=False)
-    ic, ver, rev, support = pn532.firmware_version
-    print(f"[ECO] PN532 listo — firmware v{ver}.{rev}")
-    pn532.SAM_configuration()
-    return pn532
+    intentos = 0
+    while True:
+        try:
+            i2c   = busio.I2C(board.SCL, board.SDA)
+            pn532 = PN532_I2C(i2c, debug=False)
+            ic, ver, rev, support = pn532.firmware_version
+            print(f"[ECO] PN532 listo — firmware v{ver}.{rev}")
+            pn532.SAM_configuration()
+            return pn532
+        except Exception as e:
+            intentos += 1
+            print(f"[ECO] PN532 no responde (intento {intentos}): {e}")
+            print(f"[ECO] Reintentando en 5 segundos...")
+            time.sleep(5)
+
 
 def uid_to_str(uid):
     return ":".join([format(b, "02X") for b in uid])
@@ -155,4 +164,9 @@ def main():
             time.sleep(1)
 
 if __name__ == "__main__":
-    main()
+    try:
+       main()
+    except KeyboardInterrupt:
+        print("\n[ECO] Apagando daemon...")
+        write_state(None, 0, None, 0, False)
+        print("[ECO] Hasta luego")
