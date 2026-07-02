@@ -997,3 +997,133 @@ button:active {
     padding-bottom: calc(80px + env(safe-area-inset-bottom));
   }
 }
+
+
+/* ── Modal ─────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(42, 31, 20, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  padding: 20px;
+  animation: modal-in 0.25s ease forwards;
+}
+
+@keyframes modal-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.modal-card {
+  background: var(--bg);
+  border-radius: 24px;
+  padding: 28px 24px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  animation: card-up 0.3s ease forwards;
+}
+
+@keyframes card-up {
+  from { transform: translateY(40px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.modal-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--accent-bg);
+  border: 1px solid var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+}
+
+.modal-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+}
+
+.modal-sub {
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.modal-uid {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: monospace;
+  background: var(--bg-muted);
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.modal-select {
+  width: 100%;
+  height: 48px;
+  border-radius: var(--radius-btn);
+  border: 1.5px solid var(--border);
+  background: var(--bg-card);
+  padding: 0 16px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text-primary);
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.modal-select:focus {
+  border-color: var(--accent);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.modal-btn-cancel {
+  flex: 1;
+  height: 46px;
+  border-radius: var(--radius-card);
+  background: var(--bg-muted);
+  border: 1px solid var(--border);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: background 0.15s;
+}
+
+.modal-btn-cancel:hover {
+  background: var(--border);
+}
+
+.modal-btn-confirm {
+  flex: 2;
+  height: 46px;
+  border-radius: var(--radius-card);
+  background: var(--text-primary);
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--bg);
+  box-shadow: 0 4px 14px rgba(42,31,20,0.2);
+  transition: background 0.15s;
+}
+
+.modal-btn-confirm:hover {
+  background: #3D2D1A;
+}

@@ -76,6 +76,92 @@ document.querySelectorAll('.nav-item').forEach(btn => {
 // ══════════════════════════════════════════════
 // VISTA: INICIO
 // ══════════════════════════════════════════════
+// ══════════════════════════════════════════════
+// MODAL: APRENDER DISCO NUEVO
+// ══════════════════════════════════════════════
+let pendingUid = null
+
+async function checkPendingUid() {
+  try {
+    const res  = await fetch('/api/pending')
+    const data = await res.json()
+
+    if (data.uid && data.uid !== pendingUid) {
+      pendingUid = data.uid
+      showLearnModal(data.uid)
+    } else if (!data.uid && pendingUid) {
+      pendingUid = null
+      hideLearnModal()
+    }
+  } catch (err) {
+    console.warn('Error chequeando UID pendiente:', err)
+  }
+}
+
+async function showLearnModal(uid) {
+  // Mostrar el UID
+  document.getElementById('modal-uid').textContent = uid
+
+  // Cargar álbumes disponibles en el select
+  const select = document.getElementById('modal-album-select')
+  select.innerHTML = '<option value="">Elegir álbum...</option>'
+
+  try {
+    const res    = await fetch('/api/albums')
+    const albums = await res.json()
+    albums.forEach(album => {
+      const opt   = document.createElement('option')
+      opt.value   = album.id
+      opt.textContent = album.name
+      select.appendChild(opt)
+    })
+  } catch (err) {
+    console.warn('Error cargando álbumes:', err)
+  }
+
+  document.getElementById('learn-modal').style.display = 'flex'
+}
+
+function hideLearnModal() {
+  document.getElementById('learn-modal').style.display = 'none'
+  document.getElementById('modal-album-select').value  = ''
+  pendingUid = null
+}
+
+// Botón cancelar
+document.getElementById('modal-cancel').addEventListener('click', async () => {
+  try {
+    await fetch('/api/pending/discard', { method: 'POST' })
+  } catch (err) {}
+  hideLearnModal()
+})
+
+// Botón confirmar
+document.getElementById('modal-confirm').addEventListener('click', async () => {
+  const album = document.getElementById('modal-album-select').value
+  if (!album) {
+    document.getElementById('modal-album-select').style.borderColor = 'var(--accent)'
+    return
+  }
+
+  try {
+    const res  = await fetch('/api/learn', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uid: pendingUid, album }),
+    })
+    const data = await res.json()
+
+    if (data.ok) {
+      hideLearnModal()
+      // Recargar estado para que empiece a sonar
+      loadStatus()
+    }
+  } catch (err) {
+    console.warn('Error asociando disco:', err)
+  }
+})
+
 async function loadStatus() {
   try {
     const res = await fetch('/api/status')
@@ -454,3 +540,4 @@ function capitalize(str) {
 renderInitial()
 loadStatus()
 setInterval(loadStatus, 1000)
+setInterval(checkPendingUid, 1500)

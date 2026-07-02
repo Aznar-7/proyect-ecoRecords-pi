@@ -43,6 +43,14 @@ def write_state(album, track_index, track_name, total, playing):
     with open(CONFIG_PATH, "w") as f:
         json.dump(config, f, indent=2)
 
+def write_pending_uid(uid):
+    """Guarda un UID desconocido para que la webapp lo asocie"""
+    config = read_config()
+    config["pending_uid"] = uid
+    with open(CONFIG_PATH, "w") as f:
+        json.dump(config, f, indent=2)
+    print(f"[ECO] UID pendiente guardado: {uid}")
+
 # ── NFC ──────────────────────────────────────
 def init_nfc():
     print("[ECO] Inicializando lector NFC...")
@@ -149,7 +157,7 @@ def main():
                         play_album(album)
                     else:
                         print(f"[ECO] UID no registrado: {uid}")
-                        write_state(None, 0, None, 0, False)
+                        write_pending_uid(uid)
                         current_album = None
 
             else:

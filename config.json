@@ -1,14 +1,15 @@
 {
   "albums": {
-    "53:33:6A:05": "thriller"
+    "53:33:6A:05": "thriller",
+    "CE:CE:8C:04": "love-letters"
   },
   "volume": 41,
   "lights": "warm",
   "now_playing": {
-    "album": null,
-    "track": 0,
-    "track_name": null,
-    "total": 0,
-    "playing": false
+    "album": "love-letters",
+    "track": 1,
+    "track_name": "Elvis Presley - Can't Help Falling In Love (Official Audio)",
+    "total": 12,
+    "playing": true
   }
 }

@@ -149,5 +149,43 @@ def upload_album():
         "files":        saved
     })
 
+
+# ── API: UID pendiente de asociar ─────────────
+@app.route("/api/pending")
+def get_pending():
+    config = read_config()
+    return jsonify({
+        "uid": config.get("pending_uid", None)
+    })
+
+# ── API: asociar UID a álbum ──────────────────
+@app.route("/api/learn", methods=["POST"])
+def learn_disc():
+    data  = request.get_json()
+    uid   = data.get("uid")
+    album = data.get("album")
+
+    if not uid or not album:
+        return jsonify({"ok": False, "error": "Faltan datos"}), 400
+
+    config = read_config()
+    config["albums"][uid] = album
+
+    # Limpiar el pending
+    config.pop("pending_uid", None)
+
+    write_config(config)
+    print(f"[ECO] Disco aprendido: {uid} → {album}")
+    return jsonify({"ok": True, "uid": uid, "album": album})
+
+# ── API: descartar UID pendiente ──────────────
+@app.route("/api/pending/discard", methods=["POST"])
+def discard_pending():
+    config = read_config()
+    config.pop("pending_uid", None)
+    write_config(config)
+    return jsonify({"ok": True})
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
