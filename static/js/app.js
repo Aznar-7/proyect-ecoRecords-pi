@@ -37,12 +37,6 @@ const els = {
   volumeDisplay:  $('volume-display'),
   lightsDisplay:  $('lights-display'),
   albumsList:     $('albums-list'),
-  albumName:      $('album-name'),
-  trackFiles:     $('track-files'),
-  fileLabelText:  $('file-label-text'),
-  fileList:       $('file-list'),
-  uploadFeedback: $('upload-feedback'),
-  uploadBtn:      $('upload-btn'),
 }
 
 // ── SVG icons ───────────────────────────────
@@ -74,10 +68,6 @@ document.querySelectorAll('.nav-item').forEach(btn => {
 })
 
 // ══════════════════════════════════════════════
-// VISTA: INICIO
-// ══════════════════════════════════════════════
-
-// ══════════════════════════════════════════════
 // MODAL: AJUSTES
 // ══════════════════════════════════════════════
 document.getElementById('settings-btn').addEventListener('click', () => {
@@ -107,19 +97,8 @@ document.getElementById('shutdown-btn').addEventListener('click', async () => {
 })
 
 // ══════════════════════════════════════════════
-// VISTA: AGREGAR — tabs
+// VISTA: AGREGAR — descarga via YouTube
 // ══════════════════════════════════════════════
-document.querySelectorAll('.add-tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.add-tab').forEach(t => t.classList.remove('active'))
-    tab.classList.add('active')
-    const target = tab.dataset.tab
-    document.getElementById('tab-youtube').style.display  = target === 'youtube'  ? 'block' : 'none'
-    document.getElementById('tab-archivo').style.display  = target === 'archivo'  ? 'block' : 'none'
-  })
-})
-
-// ── Descarga via YouTube ─────────────────────
 let downloadPolling = null
 
 document.getElementById('yt-download-btn').addEventListener('click', async () => {
@@ -157,7 +136,6 @@ document.getElementById('yt-download-btn').addEventListener('click', async () =>
       return
     }
 
-    // Polling de progreso
     downloadPolling = setInterval(async () => {
       try {
         const r    = await fetch('/api/download/status')
@@ -180,7 +158,7 @@ document.getElementById('yt-download-btn').addEventListener('click', async () =>
             showYtFeedback('Error: ' + stat.error, 'error')
           } else {
             showYtFeedback('✓ ' + stat.message + ' El álbum ya está en tu biblioteca.', 'success')
-            document.getElementById('yt-url').value       = ''
+            document.getElementById('yt-url').value        = ''
             document.getElementById('yt-album-name').value = ''
             document.getElementById('yt-progress').style.display = 'none'
           }
@@ -207,7 +185,6 @@ function showYtFeedback(msg, type) {
   }
 }
 
-
 // ══════════════════════════════════════════════
 // MODAL: APRENDER DISCO NUEVO
 // ══════════════════════════════════════════════
@@ -224,10 +201,8 @@ function checkPendingUid(pendingFromStatus) {
 }
 
 async function showLearnModal(uid) {
-  // Mostrar el UID
   document.getElementById('modal-uid').textContent = uid
 
-  // Cargar álbumes disponibles en el select
   const select = document.getElementById('modal-album-select')
   select.innerHTML = '<option value="">Elegir álbum...</option>'
 
@@ -253,7 +228,6 @@ function hideLearnModal() {
   pendingUid = null
 }
 
-// Botón cancelar
 document.getElementById('modal-cancel').addEventListener('click', async () => {
   try {
     await fetch('/api/pending/discard', { method: 'POST' })
@@ -261,7 +235,6 @@ document.getElementById('modal-cancel').addEventListener('click', async () => {
   hideLearnModal()
 })
 
-// Botón confirmar
 document.getElementById('modal-confirm').addEventListener('click', async () => {
   const album = document.getElementById('modal-album-select').value
   if (!album) {
@@ -279,7 +252,6 @@ document.getElementById('modal-confirm').addEventListener('click', async () => {
 
     if (data.ok) {
       hideLearnModal()
-      // Recargar estado para que empiece a sonar
       loadStatus()
     }
   } catch (err) {
@@ -287,6 +259,9 @@ document.getElementById('modal-confirm').addEventListener('click', async () => {
   }
 })
 
+// ══════════════════════════════════════════════
+// VISTA: INICIO — estado y reproducción
+// ══════════════════════════════════════════════
 async function loadStatus() {
   try {
     const res = await fetch('/api/status')
@@ -346,39 +321,27 @@ function animateDiscChange(newAlbum, callback) {
   }
 
   lastAlbum = newAlbum
-
-  // Pausar spin durante la transición
   disc.style.animationPlayState = 'paused'
-
-  // Fase 1: encogerse y desvanecerse
   disc.style.transition = 'transform 0.3s ease-in, opacity 0.25s ease'
   disc.style.transform  = 'scale(0.1)'
   disc.style.opacity    = '0'
 
   setTimeout(() => {
-    // Actualizar contenido
     callback()
-
-    // Reset sin transición
     disc.style.transition = 'none'
     disc.style.transform  = 'scale(0.1)'
     disc.style.opacity    = '0'
+    disc.offsetHeight
 
-    disc.offsetHeight // forzar reflow
-
-    // Fase 2: crecer y aparecer
     disc.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.4, 0.64, 1), opacity 0.3s ease'
     disc.style.transform  = 'scale(1)'
     disc.style.opacity    = '1'
 
-    // Retomar spin si corresponde
     setTimeout(() => {
       disc.style.animationPlayState = state.playing ? 'running' : 'paused'
     }, 400)
-
   }, 300)
 }
-
 
 function renderAll() {
   const newAlbum = state.trackName !== 'Sin disco apoyado' ? state.trackName : null
@@ -520,7 +483,7 @@ async function loadAlbums() {
       `
       return
     }
-    
+
     els.albumsList.innerHTML = ''
     albums.forEach(album => {
       const card = document.createElement('div')
@@ -537,7 +500,6 @@ async function loadAlbums() {
           <path d="M9 18l6-6-6-6"/>
         </svg>
       `
-      // Click abre el detalle del álbum
       card.addEventListener('click', () => showAlbumDetail(album))
       els.albumsList.appendChild(card)
     })
@@ -554,7 +516,6 @@ async function loadAlbums() {
 
 // ── Detalle de álbum ─────────────────────────
 async function showAlbumDetail(album) {
-  // Crear vista de detalle dinámicamente
   let detail = $('view-album-detail')
   if (!detail) {
     detail = document.createElement('div')
@@ -592,15 +553,12 @@ async function showAlbumDetail(album) {
 
   navigateTo('album-detail')
 
-  // Cargar pistas del álbum
   try {
-    // Mostrar skeleton de pistas
     $('tracks-list').innerHTML = `
       ${[1,2,3,4,5].map((_, i) => `
         <div class="track-item">
           <div class="skeleton" style="width:20px; height:14px; border-radius:4px;"></div>
           <div class="skeleton skeleton-text" style="flex:1; width:${60 + i * 8}%"></div>
-          <div class="skeleton" style="width:30px; height:12px; border-radius:4px;"></div>
         </div>
       `).join('')}
     `
@@ -613,92 +571,13 @@ async function showAlbumDetail(album) {
       <div class="track-item">
         <span class="track-num">${String(i + 1).padStart(2, '0')}</span>
         <span class="track-item-name">${track.name}</span>
-        <span class="track-item-duration">${track.duration || '—'}</span>
       </div>
     `).join('')
   } catch (err) {
     $('tracks-list').innerHTML = '<div class="tracks-loading">Error cargando pistas</div>'
   }
-  // Botón volver
+
   $('back-btn').addEventListener('click', () => navigateTo('discos'))
-}
-
-// ══════════════════════════════════════════════
-// VISTA: AGREGAR
-// ══════════════════════════════════════════════
-els.trackFiles.addEventListener('change', function () {
-  const files = Array.from(this.files)
-  if (files.length === 0) {
-    els.fileLabelText.textContent = 'Elegir archivos de audio'
-    els.fileList.style.display = 'none'
-    return
-  }
-  els.fileLabelText.textContent = `${files.length} archivo${files.length > 1 ? 's' : ''} seleccionado${files.length > 1 ? 's' : ''}`
-  els.fileList.style.display = 'block'
-  els.fileList.innerHTML = files.map(f => `
-    <div class="file-item">
-      <svg class="file-item-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
-      </svg>
-      ${f.name}
-    </div>
-  `).join('')
-})
-
-els.uploadBtn.addEventListener('click', async () => {
-  const albumName = els.albumName.value.trim()
-  const files     = els.trackFiles.files
-
-  if (!albumName) {
-    showFeedback('Escribí el nombre del álbum primero', 'error')
-    els.albumName.focus()
-    return
-  }
-  if (files.length === 0) {
-    showFeedback('Seleccioná al menos un archivo de audio', 'error')
-    return
-  }
-
-  els.uploadBtn.disabled     = true
-  els.uploadBtn.textContent  = 'Subiendo...'
-
-  try {
-    const formData = new FormData()
-    formData.append('album_name', albumName)
-    Array.from(files).forEach(f => formData.append('tracks', f))
-
-    const res  = await fetch('/api/upload', { method: 'POST', body: formData })
-    const data = await res.json()
-
-    if (data.ok) {
-      showFeedback(`✓ "${albumName}" subido — ${data.tracks_saved} pista${data.tracks_saved !== 1 ? 's' : ''}`, 'success')
-      els.albumName.value           = ''
-      els.trackFiles.value          = ''
-      els.fileLabelText.textContent = 'Elegir archivos de audio'
-      els.fileList.style.display    = 'none'
-    } else {
-      showFeedback('Error: ' + (data.error || 'algo salió mal'), 'error')
-    }
-  } catch (err) {
-    showFeedback('Error de conexión al subir', 'error')
-  } finally {
-    els.uploadBtn.disabled   = false
-    els.uploadBtn.innerHTML  = `
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-        <polyline points="17 8 12 3 7 8"/>
-        <line x1="12" y1="3" x2="12" y2="15"/>
-      </svg>
-      Subir álbum
-    `
-  }
-})
-
-function showFeedback(msg, type) {
-  els.uploadFeedback.textContent   = msg
-  els.uploadFeedback.className     = `upload-feedback ${type}`
-  els.uploadFeedback.style.display = 'block'
-  setTimeout(() => { els.uploadFeedback.style.display = 'none' }, 4000)
 }
 
 // ══════════════════════════════════════════════
@@ -715,9 +594,6 @@ function capitalize(str) {
 renderInitial()
 loadStatus()
 setInterval(loadStatus, 2000)
-//setInterval(checkPendingUid, 1500)
-
-
 
 // ── Service Worker ───────────────────────────
 if ('serviceWorker' in navigator) {

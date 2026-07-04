@@ -373,7 +373,7 @@ button:active {
 
 /* ── Controls card ─────────────────────────── */
 .controls-card {
-  margin: 14px 18px 0;
+  margin: 14px 18px 20px;
   background: var(--bg-card);
   border-radius: var(--radius-card);
   padding: 16px 20px;
