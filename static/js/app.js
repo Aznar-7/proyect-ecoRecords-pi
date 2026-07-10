@@ -419,26 +419,23 @@ function renderLights(preset) {
 }
 
 // ── Eventos: play/pause ──────────────────────
-els.playBtn.addEventListener('click', () => {
-  state.playing = !state.playing
-  els.playIcon.innerHTML = state.playing ? ICON_PAUSE : ICON_PLAY
-  els.playBtn.setAttribute('aria-label', state.playing ? 'Pausar' : 'Reproducir')
-  els.disc.classList.toggle('spinning', state.playing)
-  els.prevBtn.disabled = !state.playing
-  els.nextBtn.disabled = !state.playing
+els.playBtn.addEventListener('click', async () => {
+  try {
+    await fetch('/api/playpause', { method: 'POST' })
+  } catch (err) { console.warn('Error play/pause:', err) }
 })
 
 // ── Eventos: skip ────────────────────────────
-els.prevBtn.addEventListener('click', () => {
-  if (!state.playing || !state.totalTracks) return
-  state.track = Math.max(1, state.track - 1)
-  els.trackSub.textContent = `Pista ${state.track} de ${state.totalTracks}`
+els.prevBtn.addEventListener('click', async () => {
+  try {
+    await fetch('/api/prev', { method: 'POST' })
+  } catch (err) { console.warn('Error prev:', err) }
 })
 
-els.nextBtn.addEventListener('click', () => {
-  if (!state.playing || !state.totalTracks) return
-  state.track = Math.min(state.totalTracks, state.track + 1)
-  els.trackSub.textContent = `Pista ${state.track} de ${state.totalTracks}`
+els.nextBtn.addEventListener('click', async () => {
+  try {
+    await fetch('/api/next', { method: 'POST' })
+  } catch (err) { console.warn('Error next:', err) }
 })
 
 // ── Eventos: volumen ─────────────────────────
