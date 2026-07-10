@@ -15,6 +15,7 @@ const state = {
   draggingVolume: false,
   currentView: 'home',
   initialized: false,
+  coverAlbumId: null,
 }
 
 // ── Referencias al DOM ───────────────────────
@@ -25,6 +26,7 @@ const els = {
   trackSub:       $('track-sub'),
   discTag:        $('disc-tag'),
   disc:           $('disc'),
+  discWrapper:    $('disc-wrapper'),
   playBtn:        $('play-btn'),
   playIcon:       $('play-icon'),
   prevBtn:        $('prev-btn'),
@@ -276,7 +278,7 @@ async function loadStatus() {
     state.lights      = data.lights
     state.track       = data.track || 0
     state.totalTracks = data.total_tracks || 0
-
+    
     state.trackName = data.track_name
       ? data.track_name
       : data.playing
@@ -290,6 +292,8 @@ async function loadStatus() {
     state.discTag   = data.playing
       ? data.playing.slice(0, 5).toUpperCase()
       : '—'
+    state.coverAlbumId = data.raw_album || null
+
 
     checkPendingUid(data.pending_uid)
     renderAll()
@@ -312,7 +316,7 @@ function renderInitial() {
 let lastAlbum = null
 
 function animateDiscChange(newAlbum, callback) {
-  const disc = els.disc
+  const wrapper = els.discWrapper
 
   if (!lastAlbum || lastAlbum === newAlbum) {
     lastAlbum = newAlbum
@@ -321,26 +325,29 @@ function animateDiscChange(newAlbum, callback) {
   }
 
   lastAlbum = newAlbum
-  disc.style.animationPlayState = 'paused'
-  disc.style.transition = 'transform 0.3s ease-in, opacity 0.25s ease'
-  disc.style.transform  = 'scale(0.1)'
-  disc.style.opacity    = '0'
+
+  // Fase 1: el wrapper se achica y desvanece (el disco sigue girando adentro sin conflicto)
+  wrapper.style.transition = 'transform 0.28s cubic-bezier(0.4, 0, 1, 1), opacity 0.25s ease'
+  wrapper.style.transform  = 'scale(0.75)'
+  wrapper.style.opacity    = '0'
 
   setTimeout(() => {
+    // Actualizar contenido mientras está invisible
     callback()
-    disc.style.transition = 'none'
-    disc.style.transform  = 'scale(0.1)'
-    disc.style.opacity    = '0'
-    disc.offsetHeight
 
-    disc.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.4, 0.64, 1), opacity 0.3s ease'
-    disc.style.transform  = 'scale(1)'
-    disc.style.opacity    = '1'
+    // Reset sin transición
+    wrapper.style.transition = 'none'
+    wrapper.style.transform  = 'scale(0.75)'
+    wrapper.style.opacity    = '0'
 
-    setTimeout(() => {
-      disc.style.animationPlayState = state.playing ? 'running' : 'paused'
-    }, 400)
-  }, 300)
+    wrapper.offsetHeight // forzar reflow
+
+    // Fase 2: crece y aparece con un pequeño rebote
+    wrapper.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.4, 0.64, 1), opacity 0.3s ease'
+    wrapper.style.transform  = 'scale(1)'
+    wrapper.style.opacity    = '1'
+
+  }, 280)
 }
 
 function renderAll() {
@@ -348,6 +355,7 @@ function renderAll() {
 
   animateDiscChange(newAlbum, () => {
     els.discTag.textContent = state.discTag
+    updateDiscCover(state.coverAlbumId)
   })
 
   els.trackName.textContent = state.trackName
@@ -360,6 +368,35 @@ function renderAll() {
 
   els.prevBtn.disabled = !state.playing
   els.nextBtn.disabled = !state.playing
+}
+
+
+function updateDiscCover(albumId) {
+  const disc = els.disc
+  let coverDiv = disc.querySelector('.disc-cover')
+
+  if (!albumId) {
+    if (coverDiv) coverDiv.remove()
+    return
+  }
+
+  const coverUrl = `/api/albums/${albumId}/cover?t=${Date.now()}`
+
+  if (!coverDiv) {
+    coverDiv = document.createElement('div')
+    coverDiv.className = 'disc-cover'
+    disc.insertBefore(coverDiv, disc.firstChild)
+  }
+
+  const img = new Image()
+  img.onload = () => {
+    coverDiv.innerHTML = ''
+    coverDiv.appendChild(img)
+  }
+  img.onerror = () => {
+    coverDiv.remove()
+  }
+  img.src = coverUrl
 }
 
 function renderVolume(val) {
@@ -489,8 +526,10 @@ async function loadAlbums() {
       const card = document.createElement('div')
       card.className = 'album-card'
       card.innerHTML = `
-        <div class="album-disc">
-          <div class="album-disc-dot"></div>
+        <div class="album-disc ${album.has_cover ? 'has-cover' : ''}">
+          ${album.has_cover
+            ? `<img src="/api/albums/${album.id}/cover" alt="${album.name}">`
+            : '<div class="album-disc-dot"></div>'}
         </div>
         <div class="album-info">
           <p class="album-name">${album.name}</p>
@@ -539,6 +578,7 @@ async function showAlbumDetail(album) {
 
     <div class="album-detail-disc">
       <div class="disc disc-medium">
+        ${album.has_cover ? `<div class="disc-cover"><img src="/api/albums/${album.id}/cover" alt="${album.name}"></div>` : ''}
         <div class="disc-grooves"></div>
         <div class="disc-label">
           <div class="disc-dot"></div>

@@ -1,10 +1,10 @@
 {
   "albums": {
-    "53:33:6A:05": "thriller",
-    "CE:CE:8C:04": "love-letters"
+    "53:33:6A:05": "thriller"
   },
-  "volume": 73,
-  "lights": "off",
+  "volume": 70,
+  "lights": "warm",
+  "command": null,
   "now_playing": {
     "album": null,
     "track": 0,

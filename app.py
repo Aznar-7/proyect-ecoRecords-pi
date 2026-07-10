@@ -76,12 +76,24 @@ def list_albums():
                     f for f in os.listdir(folder_path)
                     if f.endswith(('.mp3', '.flac', '.wav', '.ogg'))
                 ]
+                has_cover = os.path.exists(os.path.join(folder_path, "cover.jpg"))
                 albums.append({
-                    "id":     folder,
-                    "name":   folder.replace("-", " ").replace("_", " ").title(),
-                    "tracks": len(tracks)
+                    "id": folder,
+                    "name": folder.replace("-", " ").replace("_", " ").title(),
+                    "tracks": len(tracks),
+                    "has_cover": has_cover
                 })
     return jsonify(albums)
+
+
+@app.route("/api/albums/<album_id>/cover")
+def album_cover(album_id):
+    from flask import send_from_directory, abort
+    album_path = os.path.join(ALBUMS_PATH, album_id)
+    cover_path = os.path.join(album_path, "cover.jpg")
+    if os.path.exists(cover_path):
+        return send_from_directory(album_path, "cover.jpg")
+    abort(404)
 
 
 # ── API: pistas de un álbum ───────────────────
@@ -272,10 +284,13 @@ def run_download(url, album_name):
     try:
         python = os.path.join(BASE_DIR, "venv", "bin", "python3")
         cmd = [
-            python ,"-m", "yt_dlp",
+            python, "-m", "yt_dlp",
             "-x", "--audio-format", "mp3",
             "--audio-quality", "0",
+            "--write-thumbnail",
+            "--convert-thumbnails", "jpg",
             "-o", os.path.join(album_path, "%(playlist_index)02d - %(title)s.%(ext)s"),
+            "-o", "thumbnail:" + os.path.join(album_path, "cover"),
             "--newline",
             url
         ]
@@ -312,10 +327,22 @@ def run_download(url, album_name):
                 download_status["progress"] = 0
 
         process.wait()
-
         print(f"[ECO] yt-dlp returncode: {process.returncode}")
 
         if process.returncode == 0:
+            # Quedarnos con una sola cover (la primera que haya bajado)
+            covers = sorted([
+                f for f in os.listdir(album_path)
+                if f.startswith("cover") and f.endswith((".jpg", ".jpeg", ".png", ".webp"))
+            ])
+            if covers:
+                final_cover = os.path.join(album_path, "cover.jpg")
+                first_cover = os.path.join(album_path, covers[0])
+                if first_cover != final_cover:
+                    os.rename(first_cover, final_cover)
+                for c in covers[1:]:
+                    os.remove(os.path.join(album_path, c))
+
             download_status.update({
                 "running":  False,
                 "progress": 100,
@@ -328,7 +355,6 @@ def run_download(url, album_name):
                 "message": "Error en la descarga",
                 "error":   "yt-dlp terminó con error"
             })
-
     except Exception as e:
         download_status.update({
             "running": False,
@@ -370,6 +396,31 @@ def service_worker():
     response.headers["Content-Type"] = "application/javascript"
     response.headers["Service-Worker-Allowed"] = "/"
     return response
+
+
+# ── API: comandos de reproducción ─────────────
+@app.route("/api/playpause", methods=[POST])
+def play_pause() :
+    config = read_config()
+    config["command"] = "pause"
+    write_config(config)
+    return jsonify({"ok": True})
+
+@app.route("/api/next", methods=[POST])
+def next_track():
+     config = read_config()
+    config["command"] = "next"
+    write_config(config)
+    return jsonify({"ok": True})
+
+@app.route("/api/prev", methods=["POST"])
+def prev_track():
+    config = read_config()
+    config["command"] = "prev"
+    write_config(config)
+    return jsonify({"ok": True})
+
+
 
 
 if __name__ == "__main__":
