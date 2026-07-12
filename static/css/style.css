@@ -218,6 +218,27 @@ button:active {
   pointer-events: none;
 }
 
+/* La foto va como label chico centrado, no cubriendo todo el disco */
+.disc-cover {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 58%;
+  height: 58%;
+  border-radius: 50%;
+  overflow: hidden;
+  z-index: 1;
+  border: 1px solid rgba(196,149,106,0.25);
+}
+
+.disc-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .disc-label {
   position: absolute;
   top: 50%;
@@ -233,6 +254,7 @@ button:active {
   align-items: center;
   justify-content: center;
   gap: 5px;
+  z-index: 2;
 }
 
 .disc-dot {
@@ -853,14 +875,10 @@ button:active {
   gap: 12px;
 }
 
-.disc-small {
+.disc-small,
+.disc-medium {
   width: 120px;
   height: 120px;
-}
-
-.disc-medium {
-  width: 150px;
-  height: 150px;
 }
 
 .album-detail-count {
@@ -1320,18 +1338,6 @@ button:active {
 .track-item:active {
   background: var(--bg-muted);
 }
-
-
-
-/* ── Cover art dentro del disco ────────────── */
-.disc-cover {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  overflow: hidden;
-}
-
-.disc-cover img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -1359,4 +1365,8 @@ button:active {
 .disc-medium .disc-cover img {
   width: 100%;
   height: 100%;
+}
+
+.progress-bar {
+  cursor: default;
 }

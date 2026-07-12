@@ -2,7 +2,6 @@
    ECO RECORDS — app.js
 ═══════════════════════════════════════════ */
 
-// ── Estado local ────────────────────────────
 const state = {
   playing: false,
   volume: 70,
@@ -12,13 +11,14 @@ const state = {
   discTag: '—',
   track: 0,
   totalTracks: 0,
+  elapsed: 0,
+  duration: 0,
   draggingVolume: false,
   currentView: 'home',
   initialized: false,
   coverAlbumId: null,
 }
 
-// ── Referencias al DOM ───────────────────────
 const $ = id => document.getElementById(id)
 
 const els = {
@@ -26,7 +26,6 @@ const els = {
   trackSub:       $('track-sub'),
   discTag:        $('disc-tag'),
   disc:           $('disc'),
-  discWrapper:    $('disc-wrapper'),
   playBtn:        $('play-btn'),
   playIcon:       $('play-icon'),
   prevBtn:        $('prev-btn'),
@@ -41,7 +40,6 @@ const els = {
   albumsList:     $('albums-list'),
 }
 
-// ── SVG icons ───────────────────────────────
 const ICON_PAUSE = `
   <rect x="6" y="4" width="4" height="16" rx="1.5"/>
   <rect x="14" y="4" width="4" height="16" rx="1.5"/>
@@ -83,17 +81,16 @@ document.getElementById('settings-close').addEventListener('click', () => {
 
 document.getElementById('shutdown-btn').addEventListener('click', async () => {
   const btn = document.getElementById('shutdown-btn')
-  btn.textContent   = 'Apagando...'
-  btn.disabled      = true
-
+  btn.textContent = 'Apagando...'
+  btn.disabled    = true
   try {
     await fetch('/api/shutdown', { method: 'POST' })
-    btn.textContent = '✓ Apagado — esperá 10 seg y desenchufá'
+    btn.textContent = 'Apagado — esperá 10 seg y desenchufá'
     setTimeout(() => {
       document.getElementById('settings-modal').style.display = 'none'
     }, 8000)
   } catch (err) {
-    btn.textContent  = 'Error al apagar'
+    btn.textContent = 'Error al apagar'
     btn.disabled     = false
   }
 })
@@ -107,21 +104,15 @@ document.getElementById('yt-download-btn').addEventListener('click', async () =>
   const url       = document.getElementById('yt-url').value.trim()
   const albumName = document.getElementById('yt-album-name').value.trim()
 
-  if (!albumName) {
-    document.getElementById('yt-album-name').focus()
-    return
-  }
-  if (!url) {
-    document.getElementById('yt-url').focus()
-    return
-  }
+  if (!albumName) { document.getElementById('yt-album-name').focus(); return }
+  if (!url) { document.getElementById('yt-url').focus(); return }
 
-  const btn      = document.getElementById('yt-download-btn')
-  btn.disabled   = true
+  const btn = document.getElementById('yt-download-btn')
+  btn.disabled    = true
   btn.textContent = 'Iniciando...'
 
-  document.getElementById('yt-progress').style.display  = 'block'
-  document.getElementById('yt-feedback').style.display  = 'none'
+  document.getElementById('yt-progress').style.display = 'block'
+  document.getElementById('yt-feedback').style.display = 'none'
 
   try {
     const res  = await fetch('/api/download', {
@@ -150,7 +141,7 @@ document.getElementById('yt-download-btn').addEventListener('click', async () =>
           clearInterval(downloadPolling)
           downloadPolling = null
           btn.disabled    = false
-          btn.innerHTML   = `
+          btn.innerHTML = `
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
               <path d="M23 7s-.3-2-1.2-2.8c-1.1-1.2-2.4-1.2-3-1.3C16.6 2.8 12 2.8 12 2.8s-4.6 0-6.8.1c-.6.1-1.9.1-3 1.3C1.3 5 1 7 1 7S.7 9.1.7 11.3v2c0 2.1.3 4.2.3 4.2s.3 2 1.2 2.8c1.1 1.2 2.6 1.1 3.3 1.2C7.3 21.7 12 21.7 12 21.7s4.6 0 6.8-.2c.6-.1 1.9-.1 3-1.3.9-.8 1.2-2.8 1.2-2.8s.3-2.1.3-4.2v-2C23.3 9.1 23 7 23 7zM9.7 15.5V8.3l6.5 3.6-6.5 3.6z"/>
             </svg>
@@ -159,15 +150,13 @@ document.getElementById('yt-download-btn').addEventListener('click', async () =>
           if (stat.error) {
             showYtFeedback('Error: ' + stat.error, 'error')
           } else {
-            showYtFeedback('✓ ' + stat.message + ' El álbum ya está en tu biblioteca.', 'success')
+            showYtFeedback('Listo. El álbum ya está en tu biblioteca.', 'success')
             document.getElementById('yt-url').value        = ''
             document.getElementById('yt-album-name').value = ''
             document.getElementById('yt-progress').style.display = 'none'
           }
         }
-      } catch (err) {
-        console.warn('Error polling descarga:', err)
-      }
+      } catch (err) { console.warn('Error polling descarga:', err) }
     }, 1000)
 
   } catch (err) {
@@ -178,13 +167,11 @@ document.getElementById('yt-download-btn').addEventListener('click', async () =>
 })
 
 function showYtFeedback(msg, type) {
-  const el      = document.getElementById('yt-feedback')
-  el.textContent  = msg
-  el.className    = `upload-feedback ${type}`
+  const el = document.getElementById('yt-feedback')
+  el.textContent   = msg
+  el.className     = `upload-feedback ${type}`
   el.style.display = 'block'
-  if (type === 'success') {
-    setTimeout(() => { el.style.display = 'none' }, 5000)
-  }
+  if (type === 'success') setTimeout(() => { el.style.display = 'none' }, 5000)
 }
 
 // ══════════════════════════════════════════════
@@ -204,23 +191,18 @@ function checkPendingUid(pendingFromStatus) {
 
 async function showLearnModal(uid) {
   document.getElementById('modal-uid').textContent = uid
-
   const select = document.getElementById('modal-album-select')
   select.innerHTML = '<option value="">Elegir álbum...</option>'
-
   try {
     const res    = await fetch('/api/albums')
     const albums = await res.json()
     albums.forEach(album => {
-      const opt   = document.createElement('option')
-      opt.value   = album.id
+      const opt = document.createElement('option')
+      opt.value = album.id
       opt.textContent = album.name
       select.appendChild(opt)
     })
-  } catch (err) {
-    console.warn('Error cargando álbumes:', err)
-  }
-
+  } catch (err) { console.warn('Error cargando álbumes:', err) }
   document.getElementById('learn-modal').style.display = 'flex'
 }
 
@@ -231,9 +213,7 @@ function hideLearnModal() {
 }
 
 document.getElementById('modal-cancel').addEventListener('click', async () => {
-  try {
-    await fetch('/api/pending/discard', { method: 'POST' })
-  } catch (err) {}
+  try { await fetch('/api/pending/discard', { method: 'POST' }) } catch (err) {}
   hideLearnModal()
 })
 
@@ -243,7 +223,6 @@ document.getElementById('modal-confirm').addEventListener('click', async () => {
     document.getElementById('modal-album-select').style.borderColor = 'var(--accent)'
     return
   }
-
   try {
     const res  = await fetch('/api/learn', {
       method: 'POST',
@@ -251,14 +230,8 @@ document.getElementById('modal-confirm').addEventListener('click', async () => {
       body: JSON.stringify({ uid: pendingUid, album }),
     })
     const data = await res.json()
-
-    if (data.ok) {
-      hideLearnModal()
-      loadStatus()
-    }
-  } catch (err) {
-    console.warn('Error asociando disco:', err)
-  }
+    if (data.ok) { hideLearnModal(); loadStatus() }
+  } catch (err) { console.warn('Error asociando disco:', err) }
 })
 
 // ══════════════════════════════════════════════
@@ -270,30 +243,29 @@ async function loadStatus() {
     if (!res.ok) throw new Error('Error de red')
     const data = await res.json()
 
-    if (!state.initialized) {
-      state.playing = data.is_playing || false
-    }
+    if (!state.initialized) state.playing = data.is_playing || false
     state.initialized = true
     state.volume      = data.volume
     state.lights      = data.lights
     state.track       = data.track || 0
     state.totalTracks = data.total_tracks || 0
-    
-    state.trackName = data.track_name
-      ? data.track_name
-      : data.playing
-      ? data.playing
-      : 'Sin disco apoyado'
+    state.playing       = data.is_playing || false
+
+    const serverElapsed  = data.elapsed || 0
+    const serverDuration = data.duration || 0
+    const trackChanged   = data.track_name !== state.trackName
+
+    if (trackChanged || Math.abs(serverElapsed - state.elapsed) > 2) {
+      state.elapsed  = serverElapsed
+      state.duration = serverDuration
+    }
+
+    state.trackName = data.track_name ? data.track_name : (data.playing ? data.playing : 'Sin disco apoyado')
     state.trackSub  = data.playing && data.total_tracks > 0
       ? `${data.playing} · Pista ${data.track} de ${data.total_tracks}`
-      : data.playing
-      ? data.playing
-      : 'Acercá un disco para empezar'
-    state.discTag   = data.playing
-      ? data.playing.slice(0, 5).toUpperCase()
-      : '—'
+      : (data.playing ? data.playing : 'Acercá un disco para empezar')
+    state.discTag = data.playing ? data.playing.slice(0, 5).toUpperCase() : '—'
     state.coverAlbumId = data.raw_album || null
-
 
     checkPendingUid(data.pending_uid)
     renderAll()
@@ -312,91 +284,77 @@ function renderInitial() {
   renderLights('warm')
 }
 
-// ── Animación cambio de disco ─────────────────
-let lastAlbum = null
-
-function animateDiscChange(newAlbum, callback) {
-  const wrapper = els.discWrapper
-
-  if (!lastAlbum || lastAlbum === newAlbum) {
-    lastAlbum = newAlbum
-    callback()
-    return
-  }
-
-  lastAlbum = newAlbum
-
-  // Fase 1: el wrapper se achica y desvanece (el disco sigue girando adentro sin conflicto)
-  wrapper.style.transition = 'transform 0.28s cubic-bezier(0.4, 0, 1, 1), opacity 0.25s ease'
-  wrapper.style.transform  = 'scale(0.75)'
-  wrapper.style.opacity    = '0'
-
-  setTimeout(() => {
-    // Actualizar contenido mientras está invisible
-    callback()
-
-    // Reset sin transición
-    wrapper.style.transition = 'none'
-    wrapper.style.transform  = 'scale(0.75)'
-    wrapper.style.opacity    = '0'
-
-    wrapper.offsetHeight // forzar reflow
-
-    // Fase 2: crece y aparece con un pequeño rebote
-    wrapper.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.4, 0.64, 1), opacity 0.3s ease'
-    wrapper.style.transform  = 'scale(1)'
-    wrapper.style.opacity    = '1'
-
-  }, 280)
-}
-
-function renderAll() {
-  const newAlbum = state.trackName !== 'Sin disco apoyado' ? state.trackName : null
-
-  animateDiscChange(newAlbum, () => {
-    els.discTag.textContent = state.discTag
-    updateDiscCover(state.coverAlbumId)
-  })
-
-  els.trackName.textContent = state.trackName
-  els.trackSub.textContent  = state.trackSub
-  els.playIcon.innerHTML    = state.playing ? ICON_PAUSE : ICON_PLAY
-  els.playBtn.setAttribute('aria-label', state.playing ? 'Pausar' : 'Reproducir')
-  els.disc.classList.toggle('spinning', state.playing)
-  if (!state.draggingVolume) renderVolume(state.volume)
-  renderLights(state.lights)
-
-  els.prevBtn.disabled = !state.playing
-  els.nextBtn.disabled = !state.playing
-}
-
+// ── Cover del disco (fade simple, sin tocar transform/animation del giro) ──
+let lastCoverAlbum = null
 
 function updateDiscCover(albumId) {
+  if (albumId === lastCoverAlbum) return
+  lastCoverAlbum = albumId
+
   const disc = els.disc
   let coverDiv = disc.querySelector('.disc-cover')
 
   if (!albumId) {
-    if (coverDiv) coverDiv.remove()
+    if (coverDiv) {
+      coverDiv.style.transition = 'opacity 0.25s ease'
+      coverDiv.style.opacity = '0'
+      setTimeout(() => coverDiv && coverDiv.remove(), 250)
+    }
     return
   }
 
-  const coverUrl = `/api/albums/${albumId}/cover?t=${Date.now()}`
-
-  if (!coverDiv) {
-    coverDiv = document.createElement('div')
-    coverDiv.className = 'disc-cover'
-    disc.insertBefore(coverDiv, disc.firstChild)
-  }
+  const coverUrl = `/api/albums/${albumId}/cover`
 
   const img = new Image()
   img.onload = () => {
+    if (!coverDiv) {
+      coverDiv = document.createElement('div')
+      coverDiv.className = 'disc-cover'
+      coverDiv.style.opacity = '0'
+      coverDiv.style.transition = 'opacity 0.3s ease'
+      disc.insertBefore(coverDiv, disc.firstChild)
+    }
     coverDiv.innerHTML = ''
     coverDiv.appendChild(img)
+    requestAnimationFrame(() => { coverDiv.style.opacity = '1' })
   }
   img.onerror = () => {
-    coverDiv.remove()
+    if (coverDiv) coverDiv.remove()
   }
   img.src = coverUrl
+}
+
+function formatTime(seconds) {
+  seconds = Math.max(0, Math.floor(seconds))
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  return `${m}:${String(s).padStart(2, '0')}`
+}
+
+function renderProgress() {
+  const pct = state.duration > 0 ? Math.min(100, (state.elapsed / state.duration) * 100) : 0
+  els.progressFill.style.width = pct + '%'
+  els.progressThumb.style.left = pct + '%'
+  els.timeCurrent.textContent  = formatTime(state.elapsed)
+  els.timeTotal.textContent    = formatTime(state.duration)
+}
+
+function renderAll() {
+  updateDiscCover(state.coverAlbumId)
+
+  els.trackName.textContent = state.trackName
+  els.trackSub.textContent  = state.trackSub
+  els.discTag.textContent   = state.discTag
+  els.playIcon.innerHTML    = state.playing ? ICON_PAUSE : ICON_PLAY
+  els.playBtn.setAttribute('aria-label', state.playing ? 'Pausar' : 'Reproducir')
+  els.disc.classList.toggle('spinning', state.playing)
+
+  if (!state.draggingVolume) renderVolume(state.volume)
+  renderLights(state.lights)
+  renderProgress()
+
+  els.prevBtn.disabled = !state.playing
+  els.nextBtn.disabled = !state.playing
 }
 
 function renderVolume(val) {
@@ -420,46 +378,36 @@ function renderLights(preset) {
 
 // ── Eventos: play/pause ──────────────────────
 els.playBtn.addEventListener('click', async () => {
-  try {
-    await fetch('/api/playpause', { method: 'POST' })
-  } catch (err) { console.warn('Error play/pause:', err) }
+  try { await fetch('/api/playpause', { method: 'POST' }) }
+  catch (err) { console.warn('Error play/pause:', err) }
 })
 
 // ── Eventos: skip ────────────────────────────
 els.prevBtn.addEventListener('click', async () => {
-  try {
-    await fetch('/api/prev', { method: 'POST' })
-  } catch (err) { console.warn('Error prev:', err) }
+  try { await fetch('/api/prev', { method: 'POST' }) }
+  catch (err) { console.warn('Error prev:', err) }
 })
 
 els.nextBtn.addEventListener('click', async () => {
-  try {
-    await fetch('/api/next', { method: 'POST' })
-  } catch (err) { console.warn('Error next:', err) }
+  try { await fetch('/api/next', { method: 'POST' }) }
+  catch (err) { console.warn('Error next:', err) }
 })
 
 // ── Eventos: volumen ─────────────────────────
 els.volumeSlider.addEventListener('mousedown',  () => { state.draggingVolume = true })
 els.volumeSlider.addEventListener('touchstart', () => { state.draggingVolume = true }, { passive: true })
-
-els.volumeSlider.addEventListener('input', function () {
-  renderVolume(parseInt(this.value))
-})
-
+els.volumeSlider.addEventListener('input', function () { renderVolume(parseInt(this.value)) })
 els.volumeSlider.addEventListener('change', function () {
   state.draggingVolume = false
   setVolume(parseInt(this.value))
 })
-
 els.volumeSlider.addEventListener('mouseup',  () => { state.draggingVolume = false })
 els.volumeSlider.addEventListener('touchend', () => { state.draggingVolume = false })
 
-// ── Eventos: luces ───────────────────────────
 document.querySelectorAll('.light-btn').forEach(btn => {
   btn.addEventListener('click', () => setLights(btn.dataset.preset))
 })
 
-// ── APIs ─────────────────────────────────────
 async function setVolume(val) {
   state.volume = val
   try {
@@ -525,7 +473,7 @@ async function loadAlbums() {
       card.innerHTML = `
         <div class="album-disc ${album.has_cover ? 'has-cover' : ''}">
           ${album.has_cover
-            ? `<img src="/api/albums/${album.id}/cover" alt="${album.name}">`
+            ? `<img src="/api/albums/${album.id}/cover" alt="${album.name}" loading="lazy" decoding="async">`
             : '<div class="album-disc-dot"></div>'}
         </div>
         <div class="album-info">
@@ -539,7 +487,6 @@ async function loadAlbums() {
       card.addEventListener('click', () => showAlbumDetail(album))
       els.albumsList.appendChild(card)
     })
-
   } catch (err) {
     els.albumsList.innerHTML = `
       <div class="albums-empty">
@@ -550,7 +497,6 @@ async function loadAlbums() {
   }
 }
 
-// ── Detalle de álbum ─────────────────────────
 async function showAlbumDetail(album) {
   let detail = $('view-album-detail')
   if (!detail) {
@@ -575,7 +521,7 @@ async function showAlbumDetail(album) {
 
     <div class="album-detail-disc">
       <div class="disc disc-medium">
-        ${album.has_cover ? `<div class="disc-cover"><img src="/api/albums/${album.id}/cover" alt="${album.name}"></div>` : ''}
+        ${album.has_cover ? `<div class="disc-cover"><img src="/api/albums/${album.id}/cover" alt="${album.name}" loading="lazy" decoding="async"></div>` : ''}
         <div class="disc-grooves"></div>
         <div class="disc-label">
           <div class="disc-dot"></div>
@@ -618,21 +564,22 @@ async function showAlbumDetail(album) {
 }
 
 // ══════════════════════════════════════════════
-// UTILIDADES
+// TICKER LOCAL DE PROGRESO (suaviza entre polls)
 // ══════════════════════════════════════════════
-function capitalize(str) {
-  if (!str) return ''
-  return str.charAt(0).toUpperCase() + str.slice(1)
-}
+setInterval(() => {
+  if (state.playing && state.duration > 0) {
+    state.elapsed = Math.min(state.duration, state.elapsed + 1)
+    renderProgress()
+  }
+}, 1000)
 
 // ══════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════
 renderInitial()
 loadStatus()
-setInterval(loadStatus, 2000)
+setInterval(loadStatus, 1000)
 
-// ── Service Worker ───────────────────────────
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/static/sw.js')
