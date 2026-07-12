@@ -66,6 +66,8 @@ def status():
         "track":        now.get("track", 0),
         "total_tracks": now.get("total", 0),
         "is_playing":   now.get("playing", False),
+        "elapsed":      now.get("elapsed", 0),
+        "duration":     now.get("duration", 0),
         "volume":       config.get("volume", 70),
         "lights":       config.get("lights", "warm"),
         "albums":       list(config.get("albums", {}).values()),

@@ -1,27 +1,39 @@
 #!/usr/bin/env python3
 """
-ECO Records — Daemon principal v2.0
-NFC + control de audio real vía mpg123
+ECO Records — Daemon principal v3.0
+NFC + audio real via subprocess limpio por pista (sin modo remoto)
 """
 
 import json
 import os
 import time
 import subprocess
-import board
+import signal
 import threading
+import board
 import busio
 from adafruit_pn532.i2c import PN532_I2C
+from mutagen.mp3 import MP3
 
 BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
 ALBUMS_PATH = os.path.join(BASE_DIR, "albums")
 
-current_uid     = None
-current_album   = None
-current_tracks  = []
-current_index   = 0
-mpg123_proc     = None
+MISS_THRESHOLD = 5
+
+current_uid       = None
+current_album     = None
+current_tracks    = []
+current_index     = 0
+current_process   = None
+play_session      = 0
+
+track_start_time     = 0
+accumulated_elapsed  = 0
+is_paused            = False
+current_duration     = 0
+
+lock = threading.Lock()
 
 # ── Config ───────────────────────────────────
 def read_config():
@@ -32,11 +44,12 @@ def write_full_config(config):
     with open(CONFIG_PATH, "w") as f:
         json.dump(config, f, indent=2)
 
-def write_state(album, track_index, track_name, total, playing):
+def write_state(album, track_index, track_name, total, playing, elapsed=0, duration=0):
     config = read_config()
     config["now_playing"] = {
         "album": album, "track": track_index,
-        "track_name": track_name, "total": total, "playing": playing
+        "track_name": track_name, "total": total, "playing": playing,
+        "elapsed": elapsed, "duration": duration
     }
     write_full_config(config)
 
@@ -84,42 +97,66 @@ def clean_track_name(filename):
         name = name.split(' - ', 1)[1]
     return name.strip()
 
-# ── Control de mpg123 (modo remoto) ──────────
-def start_mpg123():
-    global mpg123_proc
-    mpg123_proc = subprocess.Popen(
-        ["mpg123", "-R", "--audiodevice", "plughw:0,0", "-b", "2048"],
-        stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL, text=True, bufsize=1
-    )
-    print("[ECO] mpg123 iniciado en modo remoto (buffer 2048)")
+def get_duration(track_path):
+    try:
+        return int(MP3(track_path).info.length)
+    except Exception as e:
+        print(f"[ECO] No se pudo leer duracion: {e}")
+        return 0
 
-    def drain_stdout():
-        for line in mpg123_proc.stdout:
-            pass # con esto mi negrito descartamos la salida, solo la leemos para no tapar el pipe
-
-    t = threading.Thread(target=drain_stdout, daemon = True)
-    t.start()
-
-
-def mpg123_send(cmd):
-    if mpg123_proc and mpg123_proc.stdin:
+# ── Control de audio (proceso limpio por pista) ──
+def kill_current_process():
+    global current_process
+    if current_process and current_process.poll() is None:
         try:
-            mpg123_proc.stdin.write(cmd + "\n")
-            mpg123_proc.stdin.flush()
-        except Exception as e:
-            print(f"[ECO] Error enviando comando a mpg123: {e}")
+            current_process.terminate()
+            current_process.wait(timeout=1)
+        except Exception:
+            try:
+                current_process.kill()
+            except Exception:
+                pass
+    current_process = None
+
+def watch_process(proc, session):
+    """Corre en un hilo aparte. Cuando el proceso termina solo (fin de pista),
+    avanza a la siguiente — pero solo si nadie cambió de pista mientras tanto."""
+    proc.wait()
+    with lock:
+        if session == play_session and current_process is proc:
+            print("[ECO] Pista terminada, avanzando...")
+            _next_track_locked()
 
 def load_track(index):
-    global current_index
+    global current_index, track_start_time, accumulated_elapsed
+    global is_paused, current_duration, current_process, play_session
+
     if not current_tracks or index < 0 or index >= len(current_tracks):
         return
+
+    kill_current_process()
+    play_session += 1
+    session = play_session
+
     current_index = index
     track_path = os.path.join(ALBUMS_PATH, current_album, current_tracks[index])
-    mpg123_send(f"LOAD {track_path}")
+
+    current_duration    = get_duration(track_path)
+    track_start_time    = time.time()
+    accumulated_elapsed = 0
+    is_paused            = False
+
+    current_process = subprocess.Popen(
+        ["mpg123", "-q", "--audiodevice", "plughw:0,0", track_path],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+    )
+
+    t = threading.Thread(target=watch_process, args=(current_process, session), daemon=True)
+    t.start()
+
     track_name = clean_track_name(current_tracks[index])
-    print(f"[ECO] Reproduciendo: {track_name}")
-    write_state(current_album, index + 1, track_name, len(current_tracks), True)
+    print(f"[ECO] Reproduciendo: {track_name} ({current_duration}s)")
+    write_state(current_album, index + 1, track_name, len(current_tracks), True, 0, current_duration)
 
 def play_album(album_name):
     global current_album, current_tracks, current_index
@@ -128,32 +165,58 @@ def play_album(album_name):
         print(f"[ECO] Sin pistas en: {album_name}")
         write_state(album_name, 0, None, 0, False)
         return
-    current_album  = album_name
-    current_tracks = tracks
-    current_index  = 0
-    if mpg123_proc is None:
-        start_mpg123()
-    load_track(0)
+    with lock:
+        current_album  = album_name
+        current_tracks = tracks
+        current_index  = 0
+        load_track(0)
 
 def stop_playback():
-    global current_album, current_tracks, current_index
-    mpg123_send("STOP")
+    global current_album, current_tracks, current_index, play_session
+    play_session += 1
+    kill_current_process()
     current_album  = None
     current_tracks = []
     current_index  = 0
     print("[ECO] Reproducción detenida")
-    write_state(None, 0, None, 0, False)
+    write_state(None, 0, None, 0, False, 0, 0)
 
 def toggle_pause():
-    mpg123_send("PAUSE")
+    global track_start_time, accumulated_elapsed, is_paused
+    if not current_process or current_process.poll() is not None:
+        return
+    if not is_paused:
+        accumulated_elapsed += time.time() - track_start_time
+        is_paused = True
+        current_process.send_signal(signal.SIGSTOP)
+        print("[ECO] Pausado")
+    else:
+        track_start_time = time.time()
+        is_paused = False
+        current_process.send_signal(signal.SIGCONT)
+        print("[ECO] Reanudado")
 
-def next_track():
+def _next_track_locked():
     if current_tracks and current_index < len(current_tracks) - 1:
         load_track(current_index + 1)
+    else:
+        print("[ECO] Fin del album")
+        current_album_local = current_album
+        stop_playback()
+
+def next_track():
+    with lock:
+        if current_tracks and current_index < len(current_tracks) - 1:
+            load_track(current_index + 1)
+        else:
+            print("[ECO] Ya es la ultima pista")
 
 def prev_track():
-    if current_tracks and current_index > 0:
-        load_track(current_index - 1)
+    with lock:
+        if current_tracks and current_index > 0:
+            load_track(current_index - 1)
+        else:
+            print("[ECO] Ya es la primera pista")
 
 # ── Procesar comandos de la webapp ───────────
 def handle_commands():
@@ -169,17 +232,41 @@ def handle_commands():
         prev_track()
     clear_command()
 
+# ── Ticker de progreso ────────────────────────
+def progress_ticker():
+    last_written = -1
+    while True:
+        try:
+            if current_album and not is_paused and current_tracks:
+                elapsed = int(accumulated_elapsed + (time.time() - track_start_time))
+                if elapsed != last_written:
+                    last_written = elapsed
+                    track_name = clean_track_name(current_tracks[current_index])
+                    write_state(
+                        current_album, current_index + 1, track_name,
+                        len(current_tracks), True, elapsed, current_duration
+                    )
+        except Exception:
+            pass
+        time.sleep(1)
+
 # ── Loop principal ────────────────────────────
 def main():
-    global current_uid, current_album
+    global current_uid
 
     print("[ECO] ══════════════════════════════")
-    print("[ECO]  Eco Records — Daemon v2.0")
+    print("[ECO]  Eco Records — Daemon v3.0")
     print("[ECO] ══════════════════════════════")
 
     pn532 = init_nfc()
-    write_state(None, 0, None, 0, False)
+    write_state(None, 0, None, 0, False, 0, 0)
+
+    ticker = threading.Thread(target=progress_ticker, daemon=True)
+    ticker.start()
+
     print("[ECO] Esperando discos...\n")
+
+    miss_count = 0
 
     while True:
         try:
@@ -188,6 +275,7 @@ def main():
             uid_bytes = pn532.read_passive_target(timeout=0.3)
 
             if uid_bytes is not None:
+                miss_count = 0
                 uid = uid_to_str(uid_bytes)
                 if uid != current_uid:
                     current_uid = uid
@@ -202,11 +290,14 @@ def main():
                         write_full_config(config)
             else:
                 if current_uid is not None:
-                    print("[ECO] Disco retirado")
-                    stop_playback()
-                    current_uid = None
+                    miss_count += 1
+                    if miss_count >= MISS_THRESHOLD:
+                        print("[ECO] Disco retirado")
+                        stop_playback()
+                        current_uid = None
+                        miss_count = 0
 
-            time.sleep(0.2)
+            time.sleep(0.15)
 
         except Exception as e:
             print(f"[ECO] Error: {e}")
@@ -217,7 +308,6 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         print("\n[ECO] Apagando daemon...")
-        if mpg123_proc:
-            mpg123_send("QUIT")
-        write_state(None, 0, None, 0, False)
+        kill_current_process()
+        write_state(None, 0, None, 0, False, 0, 0)
         print("[ECO] Hasta luego.")

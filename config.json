@@ -3,7 +3,7 @@
     "53:33:6A:05": "thriller",
     "CE:CE:8C:04": "paranoid"
   },
-  "volume": 70,
+  "volume": 22,
   "lights": "warm",
   "command": null,
   "now_playing": {
@@ -11,6 +11,8 @@
     "track": 0,
     "track_name": null,
     "total": 0,
-    "playing": false
+    "playing": false,
+    "elapsed": 0,
+    "duration": 0
   }
 }
