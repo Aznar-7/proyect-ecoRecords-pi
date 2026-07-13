@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-ECO Records — Daemon principal v3.0
-NFC + audio real via subprocess limpio por pista (sin modo remoto)
+ECO Records — Daemon principal v3.1
+NFC + audio real via subprocess limpio por pista + motor
 """
 
 import json
@@ -12,6 +12,7 @@ import signal
 import threading
 import board
 import busio
+import RPi.GPIO as GPIO
 from adafruit_pn532.i2c import PN532_I2C
 from mutagen.mp3 import MP3
 
@@ -20,6 +21,9 @@ CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
 ALBUMS_PATH = os.path.join(BASE_DIR, "albums")
 
 MISS_THRESHOLD = 5
+
+MOTOR_PINS  = [5, 6, 13, 26]
+MOTOR_DELAY = 0.002
 
 current_uid       = None
 current_album     = None
@@ -32,6 +36,9 @@ track_start_time     = 0
 accumulated_elapsed  = 0
 is_paused            = False
 current_duration     = 0
+
+motor_thread   = None
+motor_running  = False
 
 lock = threading.Lock()
 
@@ -79,6 +86,47 @@ def init_nfc():
 
 def uid_to_str(uid):
     return ":".join([format(b, "02X") for b in uid])
+
+# ── Motor ─────────────────────────────────────
+def init_motor():
+    GPIO.setmode(GPIO.BCM)
+    for p in MOTOR_PINS:
+        GPIO.setup(p, GPIO.OUT)
+    print("[ECO] Motor inicializado")
+
+def _motor_loop():
+    global motor_running
+    secuencia_full = [
+        [1,0,0,1],
+        [1,1,0,0],
+        [0,1,1,0],
+        [0,0,1,1],
+    ]
+    i = 0
+    while motor_running:
+        paso = secuencia_full[i % 4]
+        for pin, val in zip(MOTOR_PINS, paso):
+            GPIO.output(pin, val)
+        time.sleep(MOTOR_DELAY)
+        i += 1
+    for pin in MOTOR_PINS:
+        GPIO.output(pin, 0)
+
+def start_motor():
+    global motor_thread, motor_running
+    if motor_running:
+        return
+    motor_running = True
+    motor_thread = threading.Thread(target=_motor_loop, daemon=True)
+    motor_thread.start()
+    print("[ECO] Motor: girando")
+
+def stop_motor():
+    global motor_running
+    if not motor_running:
+        return
+    motor_running = False
+    print("[ECO] Motor: detenido")
 
 # ── Pistas ───────────────────────────────────
 def get_tracks(album_name):
@@ -129,7 +177,6 @@ def watch_process(proc, session):
             else:
                 print("[ECO] Proceso terminó con error, NO avanzando")
 
-
 def load_track(index):
     global current_index, track_start_time, accumulated_elapsed
     global is_paused, current_duration, current_process, play_session
@@ -159,6 +206,7 @@ def load_track(index):
 
     track_name = clean_track_name(current_tracks[index])
     print(f"[ECO] Reproduciendo: {track_name} ({current_duration}s)")
+    start_motor()
     write_state(current_album, index + 1, track_name, len(current_tracks), True, 0, current_duration)
 
 def play_album(album_name):
@@ -176,6 +224,7 @@ def play_album(album_name):
 
 def stop_playback():
     global current_album, current_tracks, current_index, play_session
+    stop_motor()
     play_session += 1
     kill_current_process()
     current_album  = None
@@ -193,14 +242,16 @@ def toggle_pause():
         if not is_paused:
             accumulated_elapsed += time.time() - track_start_time
             is_paused = True
-            play_session += 1  # invalida al watcher del proceso que estamos por matar
+            play_session += 1
             kill_current_process()
+            stop_motor()
             print(f"[ECO] Pausado en {accumulated_elapsed:.1f}s")
         else:
             is_paused = False
             resume_at = accumulated_elapsed
             track_start_time = time.time() - resume_at
             _relaunch_from(resume_at)
+            start_motor()
             print(f"[ECO] Reanudado desde {resume_at:.1f}s")
 
 def _relaunch_from(seconds):
@@ -224,7 +275,6 @@ def _next_track_locked():
         load_track(current_index + 1)
     else:
         print("[ECO] Fin del album")
-        current_album_local = current_album
         stop_playback()
 
 def next_track():
@@ -278,10 +328,11 @@ def main():
     global current_uid
 
     print("[ECO] ══════════════════════════════")
-    print("[ECO]  Eco Records — Daemon v3.0")
+    print("[ECO]  Eco Records — Daemon v3.1")
     print("[ECO] ══════════════════════════════")
 
     pn532 = init_nfc()
+    init_motor()
     write_state(None, 0, None, 0, False, 0, 0)
 
     ticker = threading.Thread(target=progress_ticker, daemon=True)
@@ -331,6 +382,8 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         print("\n[ECO] Apagando daemon...")
+        stop_motor()
         kill_current_process()
         write_state(None, 0, None, 0, False, 0, 0)
+        GPIO.cleanup()
         print("[ECO] Hasta luego.")
