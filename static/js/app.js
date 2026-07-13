@@ -578,7 +578,7 @@ setInterval(() => {
 // ══════════════════════════════════════════════
 renderInitial()
 loadStatus()
-setInterval(loadStatus, 1000)
+setInterval(loadStatus, 500)
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

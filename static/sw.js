@@ -1,4 +1,4 @@
-const CACHE = 'eco-v8'
+const CACHE = 'eco-v9'
 const ASSETS = [
   '/',
   '/static/css/style.css',

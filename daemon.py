@@ -119,13 +119,16 @@ def kill_current_process():
     current_process = None
 
 def watch_process(proc, session):
-    """Corre en un hilo aparte. Cuando el proceso termina solo (fin de pista),
-    avanza a la siguiente — pero solo si nadie cambió de pista mientras tanto."""
     proc.wait()
+    print(f"[ECO] Proceso terminó con returncode: {proc.returncode}")
     with lock:
         if session == play_session and current_process is proc:
-            print("[ECO] Pista terminada, avanzando...")
-            _next_track_locked()
+            if proc.returncode == 0:
+                print("[ECO] Pista terminada normalmente, avanzando...")
+                _next_track_locked()
+            else:
+                print("[ECO] Proceso terminó con error, NO avanzando")
+
 
 def load_track(index):
     global current_index, track_start_time, accumulated_elapsed
@@ -182,19 +185,39 @@ def stop_playback():
     write_state(None, 0, None, 0, False, 0, 0)
 
 def toggle_pause():
-    global track_start_time, accumulated_elapsed, is_paused
-    if not current_process or current_process.poll() is not None:
-        return
-    if not is_paused:
-        accumulated_elapsed += time.time() - track_start_time
-        is_paused = True
-        current_process.send_signal(signal.SIGSTOP)
-        print("[ECO] Pausado")
-    else:
-        track_start_time = time.time()
-        is_paused = False
-        current_process.send_signal(signal.SIGCONT)
-        print("[ECO] Reanudado")
+    global track_start_time, accumulated_elapsed, is_paused, play_session
+    with lock:
+        if not current_process and not is_paused:
+            return
+
+        if not is_paused:
+            accumulated_elapsed += time.time() - track_start_time
+            is_paused = True
+            play_session += 1  # invalida al watcher del proceso que estamos por matar
+            kill_current_process()
+            print(f"[ECO] Pausado en {accumulated_elapsed:.1f}s")
+        else:
+            is_paused = False
+            resume_at = accumulated_elapsed
+            track_start_time = time.time() - resume_at
+            _relaunch_from(resume_at)
+            print(f"[ECO] Reanudado desde {resume_at:.1f}s")
+
+def _relaunch_from(seconds):
+    global current_process, play_session
+    play_session += 1
+    session = play_session
+
+    track_path = os.path.join(ALBUMS_PATH, current_album, current_tracks[current_index])
+    skip_frames = int(seconds * 38)
+
+    current_process = subprocess.Popen(
+        ["mpg123", "-q", "-k", str(skip_frames), "--audiodevice", "plughw:0,0", track_path],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+    )
+
+    t = threading.Thread(target=watch_process, args=(current_process, session), daemon=True)
+    t.start()
 
 def _next_track_locked():
     if current_tracks and current_index < len(current_tracks) - 1:
