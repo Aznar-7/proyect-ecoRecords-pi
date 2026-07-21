@@ -22,7 +22,7 @@
 
 No hay pantalla. No hay control remoto. No hace falta el celular para usarlo — apoyás el disco y listo.
 
-Inspirado en el [Echo Spins](https://echospinsofficial.com/), pero diseñado, programado y construido enteramente a mano como regalo personalizado. Sin compras de productos terminados — cada decisión de hardware, cada línea de código y cada corte de acrílico es parte del proyecto.
+Inspirado en el [Mini Brands](https://zurutoys.com/brands/mini-brands), pero diseñado, programado y construido enteramente a mano como regalo personalizado. Sin compras de productos terminados — cada decisión de hardware, cada línea de código y cada corte de acrílico es parte del proyecto.
 
 <br>
 
@@ -83,10 +83,9 @@ Una PWA instalable (sin necesidad de tienda de apps) para administrar el disposi
 - [x] Interfaz PWA con diseño propio (sin frameworks, SVG icons, tipografía custom)
 - [x] Rotación del disco animada, sincronizada con play/pause
 - [x] Integración del lector NFC (PN532)
-- [ ] Audio real vía I2S (MAX98357A)
-- [ ] Control del motor paso a paso
-- [ ] Anillo de luces WS2812B
-- [ ] Carcasa física en acrílico
+- [x] Audio real vía I2S (MAX98357A)
+- [x] Control del motor paso a paso
+- [ ] Carcasa física inspirada en mini brands
 - [ ] Discos personalizados (NFC + imán + etiqueta)
 
 <br>
