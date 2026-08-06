@@ -5,7 +5,6 @@
 const state = {
   playing: false,
   volume: 70,
-  lights: 'warm',
   trackName: '—',
   trackSub: '—',
   discTag: '—',
@@ -36,7 +35,6 @@ const els = {
   timeTotal:      $('time-total'),
   volumeSlider:   $('volume-slider'),
   volumeDisplay:  $('volume-display'),
-  lightsDisplay:  $('lights-display'),
   albumsList:     $('albums-list'),
 }
 
@@ -45,8 +43,6 @@ const ICON_PAUSE = `
   <rect x="14" y="4" width="4" height="16" rx="1.5"/>
 `
 const ICON_PLAY = `<path d="M8 5.14v14l11-7-11-7z"/>`
-
-const LIGHT_LABELS = { off: 'Apagado', warm: 'Cálida', soft: 'Suave' }
 
 // ══════════════════════════════════════════════
 // NAVEGACIÓN
@@ -246,7 +242,6 @@ async function loadStatus() {
     if (!state.initialized) state.playing = data.is_playing || false
     state.initialized = true
     state.volume      = data.volume
-    state.lights      = data.lights
     state.track       = data.track || 0
     state.totalTracks = data.total_tracks || 0
     state.playing       = data.is_playing || false
@@ -281,7 +276,6 @@ function renderInitial() {
   els.trackSub.textContent  = 'Acercá un disco para empezar'
   els.discTag.textContent   = '—'
   renderVolume(70)
-  renderLights('warm')
 }
 
 // ── Cover del disco (fade simple, sin tocar transform/animation del giro) ──
@@ -350,7 +344,6 @@ function renderAll() {
   els.disc.classList.toggle('spinning', state.playing)
 
   if (!state.draggingVolume) renderVolume(state.volume)
-  renderLights(state.lights)
   renderProgress()
 
   els.prevBtn.disabled = !state.playing
@@ -367,13 +360,6 @@ function renderVolume(val) {
     var(--border) ${val}%,
     var(--border) 100%
   )`
-}
-
-function renderLights(preset) {
-  els.lightsDisplay.textContent = LIGHT_LABELS[preset] || preset
-  document.querySelectorAll('.light-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.preset === preset)
-  })
 }
 
 // ── Eventos: play/pause ──────────────────────
@@ -404,10 +390,6 @@ els.volumeSlider.addEventListener('change', function () {
 els.volumeSlider.addEventListener('mouseup',  () => { state.draggingVolume = false })
 els.volumeSlider.addEventListener('touchend', () => { state.draggingVolume = false })
 
-document.querySelectorAll('.light-btn').forEach(btn => {
-  btn.addEventListener('click', () => setLights(btn.dataset.preset))
-})
-
 async function setVolume(val) {
   state.volume = val
   try {
@@ -417,18 +399,6 @@ async function setVolume(val) {
       body: JSON.stringify({ volume: val }),
     })
   } catch (err) { console.warn('Error volumen:', err) }
-}
-
-async function setLights(preset) {
-  state.lights = preset
-  renderLights(preset)
-  try {
-    await fetch('/api/lights', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ preset }),
-    })
-  } catch (err) { console.warn('Error luces:', err) }
 }
 
 // ══════════════════════════════════════════════
