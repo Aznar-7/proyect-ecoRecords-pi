@@ -36,7 +36,7 @@
     <section class="disc-section" aria-label="Disco actual">
       <div class="disc-shadow"></div>
       <div class="disc-wrapper" id="disc-wrapper">
-        <div class="disc" id="disc">
+        <div class="disc is-empty" id="disc">
           <div class="disc-grooves"></div>
           <div class="disc-shine"></div>
           <div class="disc-label">
@@ -55,18 +55,17 @@
         </div>
 
         <div class="player-controls">
-          <button class="ctrl-btn" id="prev-btn" aria-label="Anterior">
+          <button class="ctrl-btn" id="prev-btn" aria-label="Anterior" disabled>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M19 20L9 12l10-8v16zM5 4h2v16H5z"/>
             </svg>
           </button>
-          <button class="play-btn" id="play-btn" aria-label="Pausar">
+          <button class="play-btn" id="play-btn" aria-label="Reproducir" disabled>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" id="play-icon">
-              <rect x="6" y="4" width="4" height="16" rx="1.5"/>
-              <rect x="14" y="4" width="4" height="16" rx="1.5"/>
+              <path d="M8 5.14v14l11-7-11-7z"/>
             </svg>
           </button>
-          <button class="ctrl-btn" id="next-btn" aria-label="Siguiente">
+          <button class="ctrl-btn" id="next-btn" aria-label="Siguiente" disabled>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M5 4l10 8-10 8V4zM19 4h-2v16h2z"/>
             </svg>

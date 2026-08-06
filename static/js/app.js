@@ -275,6 +275,9 @@ function renderInitial() {
   els.trackName.textContent = 'Sin disco apoyado'
   els.trackSub.textContent  = 'Acercá un disco para empezar'
   els.discTag.textContent   = '—'
+  els.playBtn.disabled = true
+  els.prevBtn.disabled = true
+  els.nextBtn.disabled = true
   renderVolume(70)
 }
 
@@ -346,8 +349,11 @@ function renderAll() {
   if (!state.draggingVolume) renderVolume(state.volume)
   renderProgress()
 
-  els.prevBtn.disabled = !state.playing
-  els.nextBtn.disabled = !state.playing
+  const hasAlbum = state.totalTracks > 0
+  els.disc.classList.toggle('is-empty', !hasAlbum)
+  els.playBtn.disabled = !hasAlbum
+  els.prevBtn.disabled = !hasAlbum
+  els.nextBtn.disabled = !hasAlbum
 }
 
 function renderVolume(val) {

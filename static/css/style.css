@@ -364,6 +364,12 @@ button:active {
   cursor: not-allowed;
 }
 
+.play-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
 .play-btn {
   width: 46px;
   height: 46px;
