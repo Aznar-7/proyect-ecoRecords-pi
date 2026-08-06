@@ -241,3 +241,6 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 static/icons/
+
+# Superpowers SDD scratch workspace (per-plan ledgers/briefs, not project artifacts)
+.superpowers/
