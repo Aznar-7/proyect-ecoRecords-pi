@@ -18,6 +18,11 @@
   --radius-card:    20px;
   --radius-btn:     11px;
   --shadow-card:    0 1px 3px rgba(42,31,20,0.06), 0 4px 12px rgba(42,31,20,0.04);
+  --ease-out-soft:  cubic-bezier(0.34, 1.4, 0.64, 1);
+  --ease-in-soft:   cubic-bezier(0.4, 0, 1, 1);
+  --dur-fast:       150ms;
+  --dur-base:       250ms;
+  --dur-slide:      300ms;
 }
 
 *, *::before, *::after {
