@@ -69,7 +69,6 @@ def status():
         "elapsed":      now.get("elapsed", 0),
         "duration":     now.get("duration", 0),
         "volume":       config.get("volume", 70),
-        "lights":       config.get("lights", "warm"),
         "albums":       list(config.get("albums", {}).values()),
         "pending_uid":  config.get("pending_uid", None)
     })
@@ -156,16 +155,6 @@ def set_volume():
     config["volume"] = volume
     write_config(config)
     return jsonify({"ok": True, "volume": volume})
-
-# ── API: cambiar luces ────────────────────────
-@app.route("/api/lights", methods=["POST"])
-def set_lights():
-    data = request.get_json()
-    preset = data.get("preset", "warm")
-    config = read_config()
-    config["lights"] = preset
-    write_config(config)
-    return jsonify({"ok": True, "lights": preset})
 
 # ── API: comandos de reproducción ─────────────
 @app.route("/api/playpause", methods=["POST"])
