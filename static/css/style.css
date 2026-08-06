@@ -277,6 +277,26 @@ button:active {
   font-weight: 500;
 }
 
+/* ── Disco vacío (sin disco físico apoyado) ────── */
+.disc.is-empty {
+  background: radial-gradient(circle at 38% 35%, #1C140C 0%, #0A0705 100%);
+  border-color: rgba(196,149,106,0.08);
+}
+
+.disc.is-empty .disc-grooves {
+  opacity: 0.25;
+}
+
+.disc.is-empty .disc-label {
+  opacity: 0.35;
+  background: linear-gradient(145deg, #2A1F14, #1C140C);
+  border-color: rgba(196,149,106,0.12);
+}
+
+.disc.is-empty .disc-dot {
+  background: rgba(196,149,106,0.3);
+}
+
 /* ── Track info ────────────────────────────── */
 .track-section {
   padding: 4px 24px 0;
