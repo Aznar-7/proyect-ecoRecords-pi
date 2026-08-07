@@ -377,6 +377,7 @@ function animateDiscChange(albumId) {
   }
 
   lastAnimatedAlbum = albumId
+  wrapper.classList.remove('disc-slide-in', 'disc-teleport')
   wrapper.classList.add('disc-slide-out')
 
   discAnimTimeouts.push(setTimeout(() => {
