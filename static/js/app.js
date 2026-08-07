@@ -25,6 +25,7 @@ const els = {
   trackSub:       $('track-sub'),
   discTag:        $('disc-tag'),
   disc:           $('disc'),
+  discWrapper:    $('disc-wrapper'),
   playBtn:        $('play-btn'),
   playIcon:       $('play-icon'),
   prevBtn:        $('prev-btn'),
@@ -336,8 +337,62 @@ function renderProgress() {
   els.timeTotal.textContent    = formatTime(state.duration)
 }
 
+// ── Animación de cambio de disco (slide lateral) ──
+// Se dispara solo cuando cambia la identidad del álbum (coverAlbumId),
+// nunca por cambio de pista dentro del mismo álbum. El wrapper es quien
+// anima transform/opacity — #disc nunca recibe transform inline, así
+// que su animación de giro (@keyframes spin) nunca se corta ni salta.
+let lastAnimatedAlbum
+let discAnimTimeouts = []
+
+function clearDiscAnimTimeouts() {
+  discAnimTimeouts.forEach(id => clearTimeout(id))
+  discAnimTimeouts = []
+}
+
+function animateDiscChange(albumId) {
+  const wrapper = els.discWrapper
+
+  if (lastAnimatedAlbum === undefined) {
+    lastAnimatedAlbum = albumId
+    els.disc.classList.toggle('is-empty', !albumId)
+    updateDiscCover(albumId)
+    return
+  }
+
+  if (albumId === lastAnimatedAlbum) return
+
+  if (discAnimTimeouts.length > 0) {
+    // Había una transición en curso: la cortamos y saltamos directo
+    // al estado final visual, sin animar, antes de arrancar la nueva.
+    clearDiscAnimTimeouts()
+    wrapper.classList.remove('disc-slide-out', 'disc-slide-in', 'disc-teleport')
+    wrapper.style.transition = 'none'
+    wrapper.style.transform  = 'translateX(0)'
+    wrapper.style.opacity    = '1'
+    wrapper.offsetHeight // forzar reflow
+    wrapper.style.transition = ''
+    wrapper.style.transform  = ''
+    wrapper.style.opacity    = ''
+  }
+
+  lastAnimatedAlbum = albumId
+  wrapper.classList.add('disc-slide-out')
+
+  discAnimTimeouts.push(setTimeout(() => {
+    wrapper.classList.remove('disc-slide-out')
+    wrapper.classList.add('disc-teleport')
+    els.disc.classList.toggle('is-empty', !albumId)
+    updateDiscCover(albumId)
+    wrapper.offsetHeight // forzar reflow
+    wrapper.classList.remove('disc-teleport')
+    wrapper.classList.add('disc-slide-in')
+    discAnimTimeouts = []
+  }, 250))
+}
+
 function renderAll() {
-  updateDiscCover(state.coverAlbumId)
+  animateDiscChange(state.coverAlbumId)
 
   els.trackName.textContent = state.trackName
   els.trackSub.textContent  = state.trackSub
@@ -350,7 +405,6 @@ function renderAll() {
   renderProgress()
 
   const hasAlbum = state.totalTracks > 0
-  els.disc.classList.toggle('is-empty', !hasAlbum)
   els.playBtn.disabled = !hasAlbum
   els.prevBtn.disabled = !hasAlbum
   els.nextBtn.disabled = !hasAlbum

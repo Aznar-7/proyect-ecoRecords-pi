@@ -175,6 +175,24 @@ button:active {
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: transform var(--dur-base) var(--ease-in-soft), opacity var(--dur-base) var(--ease-in-soft);
+}
+
+.disc-wrapper.disc-slide-out {
+  transform: translateX(-140%);
+  opacity: 0;
+}
+
+.disc-wrapper.disc-teleport {
+  transition: none;
+  transform: translateX(140%);
+  opacity: 0;
+}
+
+.disc-wrapper.disc-slide-in {
+  transition: transform var(--dur-slide) var(--ease-out-soft), opacity var(--dur-slide) var(--ease-out-soft);
+  transform: translateX(0);
+  opacity: 1;
 }
 
 
