@@ -343,6 +343,7 @@ button:active {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: opacity var(--dur-fast) ease;
 }
 
 .track-sub {
@@ -350,6 +351,12 @@ button:active {
   color: var(--text-muted);
   margin-top: 3px;
   font-weight: 400;
+  transition: opacity var(--dur-fast) ease;
+}
+
+.track-name.text-fade,
+.track-sub.text-fade {
+  opacity: 0;
 }
 
 /* ── Player controls ───────────────────────── */

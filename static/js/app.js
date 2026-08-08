@@ -404,11 +404,35 @@ function animateDiscChange(albumId) {
   }, 250))
 }
 
+// ── Crossfade de texto al cambiar de pista ────────
+let lastDisplayedTrackName
+
+function renderTrackText() {
+  if (lastDisplayedTrackName === undefined) {
+    lastDisplayedTrackName = state.trackName
+    els.trackName.textContent = state.trackName
+    els.trackSub.textContent  = state.trackSub
+    return
+  }
+
+  if (state.trackName === lastDisplayedTrackName) return
+  lastDisplayedTrackName = state.trackName
+
+  els.trackName.classList.add('text-fade')
+  els.trackSub.classList.add('text-fade')
+
+  setTimeout(() => {
+    els.trackName.textContent = state.trackName
+    els.trackSub.textContent  = state.trackSub
+    els.trackName.classList.remove('text-fade')
+    els.trackSub.classList.remove('text-fade')
+  }, 150)
+}
+
 function renderAll() {
   animateDiscChange(state.coverAlbumId)
 
-  els.trackName.textContent = state.trackName
-  els.trackSub.textContent  = state.trackSub
+  renderTrackText()
   els.discTag.textContent   = state.discTag
   els.playIcon.innerHTML    = state.playing ? ICON_PAUSE : ICON_PLAY
   els.playBtn.setAttribute('aria-label', state.playing ? 'Pausar' : 'Reproducir')
