@@ -67,13 +67,23 @@ document.querySelectorAll('.nav-item').forEach(btn => {
 // ══════════════════════════════════════════════
 // MODAL: AJUSTES
 // ══════════════════════════════════════════════
+function closeModal(modalEl) {
+  modalEl.classList.add('closing')
+  setTimeout(() => {
+    modalEl.style.display = 'none'
+    modalEl.classList.remove('closing')
+  }, 180)
+}
+
 document.getElementById('settings-btn').addEventListener('click', () => {
+  const modal = document.getElementById('settings-modal')
+  modal.classList.remove('closing')
   document.getElementById('settings-volume-label').textContent = state.volume + '%'
-  document.getElementById('settings-modal').style.display = 'flex'
+  modal.style.display = 'flex'
 })
 
 document.getElementById('settings-close').addEventListener('click', () => {
-  document.getElementById('settings-modal').style.display = 'none'
+  closeModal(document.getElementById('settings-modal'))
 })
 
 document.getElementById('shutdown-btn').addEventListener('click', async () => {
@@ -84,7 +94,7 @@ document.getElementById('shutdown-btn').addEventListener('click', async () => {
     await fetch('/api/shutdown', { method: 'POST' })
     btn.textContent = 'Apagado — esperá 10 seg y desenchufá'
     setTimeout(() => {
-      document.getElementById('settings-modal').style.display = 'none'
+      closeModal(document.getElementById('settings-modal'))
     }, 8000)
   } catch (err) {
     btn.textContent = 'Error al apagar'
@@ -200,11 +210,13 @@ async function showLearnModal(uid) {
       select.appendChild(opt)
     })
   } catch (err) { console.warn('Error cargando álbumes:', err) }
-  document.getElementById('learn-modal').style.display = 'flex'
+  const modal = document.getElementById('learn-modal')
+  modal.classList.remove('closing')
+  modal.style.display = 'flex'
 }
 
 function hideLearnModal() {
-  document.getElementById('learn-modal').style.display = 'none'
+  closeModal(document.getElementById('learn-modal'))
   document.getElementById('modal-album-select').value  = ''
   pendingUid = null
 }

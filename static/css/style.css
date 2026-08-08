@@ -1101,6 +1101,24 @@ button:active {
   to   { transform: translateY(0);    opacity: 1; }
 }
 
+.modal-overlay.closing {
+  animation: modal-out 180ms ease forwards;
+}
+
+.modal-overlay.closing .modal-card {
+  animation: card-down 180ms ease forwards;
+}
+
+@keyframes modal-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes card-down {
+  from { transform: translateY(0);    opacity: 1; }
+  to   { transform: translateY(40px); opacity: 0; }
+}
+
 .modal-icon {
   width: 56px;
   height: 56px;
