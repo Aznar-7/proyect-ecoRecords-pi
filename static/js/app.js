@@ -281,6 +281,7 @@ async function loadStatus() {
     console.warn('Sin conexión:', err)
     els.trackName.textContent = 'Sin conexión'
     els.trackSub.textContent  = 'Verificá la red'
+    lastDisplayedTrackName = undefined
   }
 }
 
