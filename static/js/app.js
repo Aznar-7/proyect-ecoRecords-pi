@@ -70,6 +70,7 @@ document.querySelectorAll('.nav-item').forEach(btn => {
 function closeModal(modalEl) {
   modalEl.classList.add('closing')
   setTimeout(() => {
+    if (!modalEl.classList.contains('closing')) return   // reopened meanwhile
     modalEl.style.display = 'none'
     modalEl.classList.remove('closing')
   }, 180)
@@ -370,6 +371,7 @@ function animateDiscChange(albumId) {
     lastAnimatedAlbum = albumId
     els.disc.classList.toggle('is-empty', !albumId)
     updateDiscCover(albumId)
+    els.discTag.textContent = state.discTag
     return
   }
 
@@ -398,6 +400,7 @@ function animateDiscChange(albumId) {
     wrapper.classList.add('disc-teleport')
     els.disc.classList.toggle('is-empty', !albumId)
     updateDiscCover(albumId)
+    els.discTag.textContent = state.discTag
     wrapper.offsetHeight // forzar reflow
     wrapper.classList.remove('disc-teleport')
     wrapper.classList.add('disc-slide-in')
@@ -434,7 +437,6 @@ function renderAll() {
   animateDiscChange(state.coverAlbumId)
 
   renderTrackText()
-  els.discTag.textContent   = state.discTag
   els.playIcon.innerHTML    = state.playing ? ICON_PAUSE : ICON_PLAY
   els.playBtn.setAttribute('aria-label', state.playing ? 'Pausar' : 'Reproducir')
   els.disc.classList.toggle('spinning', state.playing)
