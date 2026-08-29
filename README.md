@@ -4,10 +4,10 @@
 
 ### Un tocadiscos NFC hecho a mano, disco por disco
 
-*Apoyás un disco. Empieza a girar. Suena la música. Brillan las luces.*
+*Apoyás un disco. Bajás el brazo. Suena la música.*
 
 [![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-Zero%202W-C51A4A?style=flat-square&logo=raspberrypi&logoColor=white)](https://www.raspberrypi.com/)
-[![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/Python-3.13-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.x-000000?style=flat-square&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 [![Status](https://img.shields.io/badge/status-en%20construcción-C4956A?style=flat-square)]()
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)]()
@@ -18,11 +18,11 @@
 
 ## ✦ Qué es esto
 
-**Eco Records** es un tocadiscos físico construido desde cero: cada disco de acrílico representa un álbum completo. Lo apoyás sobre la base, un lector NFC oculto detecta cuál es, el plato empieza a girar, suena la música y se enciende una luz cálida alrededor.
+**Eco Records** es un tocadiscos físico construido desde cero: cada disco representa un álbum completo. Lo apoyás sobre el plato, un lector NFC oculto identifica cuál es, y cuando bajás el brazo mecánico hasta el borde del disco —como en un tocadiscos real— arranca a girar y suena la música en estéreo.
 
-No hay pantalla. No hay control remoto. No hace falta el celular para usarlo — apoyás el disco y listo.
+No hay pantalla obligatoria. No hace falta el celular para usarlo — apoyás el disco, bajás el brazo, y listo. La webapp existe como panel de control opcional (biblioteca de álbumes, agregar música nueva), no como forma principal de uso.
 
-Inspirado en el [Mini Brands](https://zurutoys.com/brands/mini-brands), pero diseñado, programado y construido enteramente a mano como regalo personalizado. Sin compras de productos terminados — cada decisión de hardware, cada línea de código y cada corte de acrílico es parte del proyecto.
+Diseñado, programado y construido enteramente a mano como regalo personalizado, con estética vintage de madera. Sin compras de productos terminados — cada decisión de hardware, cada línea de código, cada pieza de la carcasa es parte del proyecto.
 
 <br>
 
@@ -32,17 +32,21 @@ Inspirado en el [Mini Brands](https://zurutoys.com/brands/mini-brands), pero dis
    disco apoyado
         │
         ▼
-  lector NFC (PN532) identifica el UID
+  lector NFC (PN532) identifica el álbum — pero no reproduce todavía
         │
         ▼
-  UID → álbum (vía config.json)
+  se baja el brazo hasta el borde del disco
+        │
+        ▼
+  sensor Hall detecta el imán de la punta
         │
         ├──► motor gira el plato
-        ├──► se reproduce la carpeta del álbum
-        └──► se enciende el anillo de luces
+        └──► arranca el audio en estéreo (2× MAX98357A)
+
+  se levanta el brazo → pausa · se retira el disco → corte total
 ```
 
-Cada disco no es una sola canción — es un **álbum completo**, con sus pistas en orden, organizado en carpetas dentro de la Raspberry Pi. Sacás el disco, la música para. Lo volvés a poner, retoma.
+Cada disco es un **álbum completo**, con sus pistas en orden. El gesto de bajar el brazo es el que dispara la reproducción — igual que "poner la aguja" en un tocadiscos real, no un simple sensor de presencia.
 
 <br>
 
@@ -51,42 +55,43 @@ Cada disco no es una sola canción — es un **álbum completo**, con sus pistas
 | Capa | Tecnología | Por qué |
 |---|---|---|
 | **Cerebro** | Raspberry Pi Zero 2W · Raspberry Pi OS Lite | Linux real, manejo simple de archivos y audio, WiFi integrado |
-| **Identificación** | PN532 (NFC) vía I2C | Mejor antena que alternativas más baratas, lee y escribe tags |
-| **Audio** | MAX98357A (DAC + ampli I2S) | Audio limpio, sin el ruido del jack analógico del Pi |
-| **Movimiento** | Motor paso a paso 28BYJ-48 + ULN2003 | Giro preciso, silencioso, bajo consumo |
-| **Iluminación** | Anillo WS2812B (NeoPixel) | Glow cálido controlable por software |
-| **Backend** | Python · Flask | Liviano, ideal para una Pi Zero, sin build step |
-| **Frontend** | HTML / CSS / JS vanilla · PWA instalable | Sin frameworks pesados — interfaz para administrar volumen, luces y álbumes desde el celular |
-| **Estructura física** | Sándwich de acrílico cortado a láser | Acabado premium sin necesitar experiencia previa en impresión 3D |
+| **Alimentación** | UPS HAT (batería LiPo + Pogo Pin) | Apagado seguro ante cortes de luz, sin perder la SD |
+| **Identificación** | PN532 (NFC) vía I2C | Identifica el álbum; el sensor Hall dispara la reproducción real |
+| **Gatillo mecánico** | Sensor Hall + imán en la punta del brazo | Replica el gesto de "bajar la aguja" de un tocadiscos real |
+| **Audio** | 2× MAX98357A (DAC + ampli I2S) | Un canal por chip, audio digital limpio vía I2S |
+| **Movimiento** | Motor paso a paso 28BYJ-48 + ULN2003 | Giro sincronizado con la reproducción, controlado por GPIO |
+| **Backend** | Python · Flask · systemd | Liviano, ideal para una Pi Zero; arranca solo al encender, se autorecupera de fallos |
+| **Frontend** | HTML / CSS / JS vanilla · PWA instalable | Biblioteca de álbumes y descarga de música nueva desde el celular, con HTTPS propio |
+| **Acceso remoto** | Cloudflare Tunnel + dominio propio | HTTPS automático, instalable como app real en cualquier celular |
+| **Estructura física** | Carcasa impresa en 3D (diseño propio en Fusion 360) + tapa de acrílico con bisagra | Estética cálida de madera, cámaras acústicas selladas para cada parlante |
 
 <br>
 
 ## ✦ La interfaz
 
-Una PWA instalable (sin necesidad de tienda de apps) para administrar el dispositivo desde el celular — pensada para que la use alguien sin conocimientos técnicos.
-
-<div align="center">
-<img src="docs/screenshot-app.png" width="320" alt="Pantalla principal de la app Eco Records">
-</div>
-
-> Volumen, iluminación y biblioteca de discos, todo en lenguaje simple — sin tecnicismos, sin configuración compleja.
+Una PWA instalable (sin necesidad de tienda de apps) — biblioteca de discos y descarga de álbumes nuevos pegando un link de YouTube. El uso diario del objeto no depende de ella: se usa apoyando discos y bajando el brazo.
 
 <br>
 
 ## ✦ Estado del proyecto
 
-> 🚧 **En construcción activa** — este es un proyecto en desarrollo, no un producto terminado.
+> 🚧 **En construcción activa** — el software y la electrónica funcionan de punta a punta; queda terminar el armado físico definitivo.
 
-- [x] Raspberry Pi Zero 2W configurada (headless, SSH, WiFi)
-- [x] Estructura del proyecto y entorno virtual
-- [x] Backend Flask con API REST (`/api/status`, `/api/volume`, `/api/lights`)
-- [x] Interfaz PWA con diseño propio (sin frameworks, SVG icons, tipografía custom)
-- [x] Rotación del disco animada, sincronizada con play/pause
-- [x] Integración del lector NFC (PN532)
-- [x] Audio real vía I2S (MAX98357A)
-- [x] Control del motor paso a paso
-- [ ] Carcasa física inspirada en mini brands
-- [ ] Discos personalizados (NFC + imán + etiqueta)
+- [x] Raspberry Pi Zero 2W configurada (headless, SSH, WiFi, servicios systemd)
+- [x] Backend Flask con API REST completa
+- [x] Interfaz PWA instalable con HTTPS (Cloudflare Tunnel + dominio propio)
+- [x] Integración del lector NFC (PN532), detección estable con debounce
+- [x] Audio real vía I2S, 2 amplificadores (MAX98357A) para estéreo
+- [x] Control del motor paso a paso, sincronizado con la reproducción
+- [x] Sensor Hall integrado como gatillo real de play/pausa (needle down/up)
+- [x] UPS HAT con batería de respaldo, para apagado seguro ante cortes de luz
+- [x] Descarga de álbumes vía YouTube directo desde la webapp
+- [x] Diseño 3D completo de la carcasa (Fusion 360): cámaras acústicas selladas, plataforma del disco, pivote del brazo, tapa con bisagra
+- [x] Discos personalizados (vinilos decorativos + tag NFC + imán pegados abajo)
+- [x] Impresión 3D final y armado de la carcasa
+- [ ] Ajuste fino de estéreo real (selección de canal izquierdo/derecho)
+- [ ] Control de volumen por software
+- [ ] Packaging de los álbumes (fundas tipo vinilo)
 
 <br>
 
@@ -95,15 +100,17 @@ Una PWA instalable (sin necesidad de tienda de apps) para administrar el disposi
 ```
 eco/
 ├── app.py                  # Servidor Flask — rutas y lógica de la API
-├── config.json              # Mapeo UID de disco → álbum, volumen, luces
+├── daemon.py                # Daemon principal — NFC, Hall, audio, motor
+├── config.json               # Mapeo UID de disco → álbum, estado en vivo
 ├── templates/
-│   └── index.html           # Interfaz principal (PWA)
+│   └── index.html            # Interfaz principal (PWA)
 ├── static/
-│   ├── css/
-│   │   └── style.css        # Estilos — paleta cálida, tipografía serif/sans
-│   └── js/
-│       └── app.js           # Lógica del front: estado, polling, controles
-└── albums/                  # Carpetas de música (no versionado — ver .gitignore)
+│   ├── css/style.css         # Estilos — paleta cálida, tipografía serif/sans
+│   ├── js/app.js              # Lógica del front: estado, polling, controles
+│   ├── manifest.json          # Manifest de la PWA
+│   ├── sw.js                  # Service worker (caché offline)
+│   └── icons/                 # Íconos de la PWA (no versionados, se regeneran)
+└── albums/                   # Carpetas de música (no versionado — ver .gitignore)
 ```
 
 <br>
@@ -112,25 +119,26 @@ eco/
 
 ```bash
 # Clonar
-git clone https://github.com/Aznar-7/proyect-ecoRecords-pi.git
-cd proyect-ecoRecords-pi
+git clone https://github.com/Aznar-7/proyect-ecoRecords-pi.git eco
+cd eco
 
 # Entorno virtual
 python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
+pip install flask adafruit-circuitpython-pn532 mutagen RPi.GPIO gpiozero lgpio yt-dlp pi-ina219
 
-# Levantar el servidor
-python3 app.py
+# Levantar el servidor y el daemon
+python3 app.py        # en una terminal
+python3 daemon.py     # en otra
 ```
 
-La app queda disponible en `http://<ip-de-la-pi>:5000` desde cualquier dispositivo en la misma red.
+En producción, ambos corren como servicios `systemd` que arrancan solos al encender la Pi.
 
 <br>
 
 ## ✦ Por qué este proyecto
 
-Construido desde cero como regalo personalizado — sin atajos de productos comerciales. Cada disco representa algo elegido a propósito; cada parte del dispositivo fue decidida, no comprada hecha.
+Construido desde cero como regalo personalizado — sin atajos de productos comerciales. Cada disco representa algo elegido a propósito; cada parte del dispositivo, desde el circuito hasta el gesto de bajar el brazo, fue decidida, no comprada hecha.
 
 > *"El objetivo no es solo que funcione — es que se sienta hecho con intención, de principio a fin."*
 
