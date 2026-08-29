@@ -121,12 +121,14 @@ def init_motor():
 
 def _motor_loop():
     global motor_running
+
     secuencia_full = [
-        [1,0,0,1],
-        [1,1,0,0],
-        [0,1,1,0],
         [0,0,1,1],
+        [0,1,1,0],
+        [1,1,0,0],
+        [1,0,0,1]
     ]
+
     i = 0
     while motor_running:
         paso = secuencia_full[i % 4]
