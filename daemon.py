@@ -428,7 +428,7 @@ def main():
 
             # ── Hall con debounce ──
             raw = hall_detects_needle(hall)
-            print(f"[DEBUG] hall_raw={raw} needle_down={needle_down} stable_cnt={needle_stable_cnt}")
+            print(f"[DEBUG] is_active={hall.is_active} hall_raw={raw} needle_down={needle_down}")
 
             if raw == needle_down_raw:
                 needle_stable_cnt += 1
