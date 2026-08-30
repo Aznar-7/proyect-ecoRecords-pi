@@ -2,10 +2,9 @@
   "albums": {
     "53:33:6A:05": "thriller",
     "CE:CE:8C:04": "02-09",
-    "53:35:6C:AA:75:00:01": "thriller",
-    "53:3E:6C:AA:75:00:01": "02-09"
+    "53:3F:6C:AA:75:00:01": "02-09"
   },
-  "volume": 6,
+  "volume": 100,
   "lights": "warm",
   "command": null,
   "now_playing": {
@@ -13,6 +12,9 @@
     "track": 0,
     "track_name": null,
     "total": 0,
-    "playing": false
+    "playing": false,
+    "elapsed": 0,
+    "duration": 0,
+    "needle_down": false
   }
 }
