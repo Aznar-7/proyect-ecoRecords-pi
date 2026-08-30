@@ -6,15 +6,15 @@
   },
   "volume": 100,
   "lights": "warm",
-  "command": null,
+  "command": "next",
   "now_playing": {
-    "album": null,
-    "track": 0,
-    "track_name": null,
-    "total": 0,
+    "album": "02-09",
+    "track": 1,
+    "track_name": "Can't Help Falling In Love (Official Audio)",
+    "total": 11,
     "playing": false,
     "elapsed": 0,
     "duration": 0,
-    "needle_down": false
+    "needle_down": true
   }
 }
