@@ -110,7 +110,7 @@ def init_hall():
 
 def hall_detects_needle(sensor):
     # Polo correcto = not is_active (confirmado en pruebas físicas)
-    return not sensor.is_active
+    return  sensor.is_active
 
 # ── Motor ─────────────────────────────────────
 def init_motor():
