@@ -212,7 +212,7 @@ def discard_pending():
     write_config(config)
     return jsonify({"ok": True})
 
-# ── API: apagado seguro ───────────────────────
+# ── API: Reinicio seguro ───────────────────────
 @app.route("/api/shutdown", methods=["POST"])
 def shutdown():
     config = read_config()
@@ -221,8 +221,8 @@ def shutdown():
         "total": 0, "playing": False
     }
     write_config(config)
-    subprocess.Popen(["sudo", "shutdown", "-h", "now"])
-    return jsonify({"ok": True, "message": "Apagando en 5 segundos..."})
+    subprocess.Popen(["sudo", "reboot"])
+    return jsonify({"ok": True, "message": "Reiniciando..."})
 
 # ── Descarga via YouTube ──────────────────────
 download_status = {

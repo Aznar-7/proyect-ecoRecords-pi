@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-ECO Records — Daemon principal v4.0
-NFC identifica el disco, Hall dispara play/pausa (needle down/up),
-audio real via subprocess limpio por pista, motor sincronizado.
+ECO Records — Daemon principal v4.2
+NFC identifica el disco y reproduce directo (Hall desactivado temporalmente).
+Audio real via subprocess limpio por pista, motor sincronizado.
 """
 
 import json
@@ -15,21 +15,12 @@ import busio
 import RPi.GPIO as GPIO
 from adafruit_pn532.i2c import PN532_I2C
 from mutagen.mp3 import MP3
-from gpiozero import Device, DigitalInputDevice
-from gpiozero.pins.lgpio import LGPIOFactory
-
-Device.pin_factory = LGPIOFactory()
 
 BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
 ALBUMS_PATH = os.path.join(BASE_DIR, "albums")
 
-MISS_THRESHOLD = 15   # lecturas NFC fallidas antes de "disco retirado"
-                       # (subido de 5 a 15: el disco gira, el tag puede
-                       # salir de rango momentáneamente sin que se sacó)
-
-HALL_PIN       = 17
-HALL_DEBOUNCE  = 2     # lecturas estables antes de confirmar cambio
+MISS_THRESHOLD = 15
 
 MOTOR_PINS  = [5, 6, 13, 26]
 MOTOR_DELAY = 0.002
@@ -43,12 +34,9 @@ play_session      = 0
 
 track_start_time     = 0
 accumulated_elapsed  = 0
-is_paused            = True   # arranca "pausado" hasta que baje el brazo
+is_paused            = True
 current_duration     = 0
-
-needle_down       = False   # estado confirmado (post-debounce) del Hall
-needle_down_raw   = False
-needle_stable_cnt = 0
+track_started         = False
 
 motor_thread   = None
 motor_running  = False
@@ -69,8 +57,7 @@ def write_state(album, track_index, track_name, total, playing, elapsed=0, durat
     config["now_playing"] = {
         "album": album, "track": track_index,
         "track_name": track_name, "total": total, "playing": playing,
-        "elapsed": elapsed, "duration": duration,
-        "needle_down": needle_down
+        "elapsed": elapsed, "duration": duration
     }
     write_full_config(config)
 
@@ -101,17 +88,6 @@ def init_nfc():
 def uid_to_str(uid):
     return ":".join([format(b, "02X") for b in uid])
 
-# ── Sensor Hall ───────────────────────────────
-def init_hall():
-    print("[ECO] Inicializando sensor Hall...")
-    sensor = DigitalInputDevice(HALL_PIN, pull_up=True)
-    print("[ECO] Sensor Hall listo")
-    return sensor
-
-def hall_detects_needle(sensor):
-    # Polo correcto = not is_active (confirmado en pruebas físicas)
-    return  sensor.is_active
-
 # ── Motor ─────────────────────────────────────
 def init_motor():
     GPIO.setmode(GPIO.BCM)
@@ -121,14 +97,12 @@ def init_motor():
 
 def _motor_loop():
     global motor_running
-
     secuencia_full = [
         [0,0,1,1],
         [0,1,1,0],
         [1,1,0,0],
         [1,0,0,1]
     ]
-
     i = 0
     while motor_running:
         paso = secuencia_full[i % 4]
@@ -204,9 +178,8 @@ def watch_process(proc, session):
                 print(f"[ECO] Proceso terminó con error (rc={proc.returncode}), no avanzando")
 
 def load_track(index):
-    """Carga y arranca una pista desde el principio."""
     global current_index, track_start_time, accumulated_elapsed
-    global is_paused, current_duration, current_process, play_session
+    global is_paused, current_duration, current_process, play_session, track_started
 
     if not current_tracks or index < 0 or index >= len(current_tracks):
         return
@@ -222,6 +195,7 @@ def load_track(index):
     track_start_time    = time.time()
     accumulated_elapsed = 0
     is_paused            = False
+    track_started         = True
 
     current_process = subprocess.Popen(
         ["mpg123", "-q", "--audiodevice", "plughw:0,0", track_path],
@@ -235,10 +209,9 @@ def load_track(index):
     print(f"[ECO] Reproduciendo: {track_name} ({current_duration}s)")
     write_state(current_album, index + 1, track_name, len(current_tracks), True, 0, current_duration)
 
-def prepare_album(album_name):
-    """NFC identificó el álbum: prepara las pistas pero NO reproduce
-    todavía — eso lo dispara el Hall al bajar el brazo."""
-    global current_album, current_tracks, current_index, is_paused
+def play_album(album_name):
+    """NFC identificó el álbum: reproduce directo (sin esperar Hall)."""
+    global current_album, current_tracks, current_index
 
     tracks = get_tracks(album_name)
     if not tracks:
@@ -249,15 +222,11 @@ def prepare_album(album_name):
     current_album  = album_name
     current_tracks = tracks
     current_index  = 0
-    is_paused      = True  # "cargado pero no arrancado" se trata igual que pausado
-
-    track_name = clean_track_name(tracks[0])
-    print(f"[ECO] Disco identificado: {album_name} — esperando que baje el brazo")
-    write_state(album_name, 1, track_name, len(tracks), False, 0, 0)
+    load_track(0)
+    start_motor()
 
 def stop_playback():
-    """Disco retirado por completo: corte total y reset."""
-    global current_album, current_tracks, current_index, play_session, is_paused
+    global current_album, current_tracks, current_index, play_session, is_paused, track_started
     stop_motor()
     play_session += 1
     kill_current_process()
@@ -265,11 +234,11 @@ def stop_playback():
     current_tracks = []
     current_index  = 0
     is_paused      = True
+    track_started    = False
     print("[ECO] Disco retirado — reproducción detenida")
     write_state(None, 0, None, 0, False, 0, 0)
 
 def _pause_now():
-    """Pausa: mata el proceso, guarda el tiempo transcurrido."""
     global track_start_time, accumulated_elapsed, is_paused, play_session
     if current_process is None or is_paused:
         return
@@ -284,7 +253,6 @@ def _pause_now():
                 len(current_tracks), False, accumulated_elapsed, current_duration)
 
 def _resume_now():
-    """Reanuda: relanza mpg123 desde el punto exacto donde se pausó."""
     global track_start_time, is_paused, current_process, play_session
     if not is_paused or not current_tracks:
         return
@@ -311,12 +279,11 @@ def _resume_now():
                 len(current_tracks), True, resume_at, current_duration)
 
 def toggle_pause():
-    """Comando manual desde la webapp — usa el mismo estado que el Hall."""
     with lock:
         if is_paused:
-            if current_process is None and not current_tracks:
+            if not current_tracks:
                 return
-            if current_process is None:
+            if not track_started:
                 load_track(current_index)
                 start_motor()
             else:
@@ -327,8 +294,7 @@ def toggle_pause():
 def _next_track_locked():
     if current_tracks and current_index < len(current_tracks) - 1:
         load_track(current_index + 1)
-        if needle_down:
-            start_motor()
+        start_motor()
     else:
         print("[ECO] Fin del album")
         _pause_now()
@@ -350,25 +316,6 @@ def prev_track():
                 start_motor()
         else:
             print("[ECO] Ya es la primera pista")
-
-# ── Gatillos del Hall (needle down/up) ────────
-def on_needle_down():
-    with lock:
-        if not current_album or not current_tracks:
-            return  # no hay disco cargado todavia
-        if is_paused:
-            if current_process is None:
-                load_track(current_index)
-            else:
-                _resume_now()
-            start_motor()
-            print("[ECO] Brazo bajado — reproduciendo")
-
-def on_needle_up():
-    with lock:
-        if current_process is not None and not is_paused:
-            _pause_now()
-            print("[ECO] Brazo levantado — pausado")
 
 # ── Procesar comandos de la webapp ───────────
 def handle_commands():
@@ -404,14 +351,13 @@ def progress_ticker():
 
 # ── Loop principal ────────────────────────────
 def main():
-    global current_uid, needle_down, needle_down_raw, needle_stable_cnt
+    global current_uid
 
     print("[ECO] ══════════════════════════════")
-    print("[ECO]  Eco Records — Daemon v4.0")
+    print("[ECO]  Eco Records — Daemon v4.2 (sin Hall)")
     print("[ECO] ══════════════════════════════")
 
     pn532 = init_nfc()
-    hall  = init_hall()
     init_motor()
     write_state(None, 0, None, 0, False, 0, 0)
 
@@ -426,24 +372,6 @@ def main():
         try:
             handle_commands()
 
-            # ── Hall con debounce ──
-            raw = hall_detects_needle(hall)
-            print(f"[DEBUG] is_active={hall.is_active} hall_raw={raw} needle_down={needle_down}")
-
-            if raw == needle_down_raw:
-                needle_stable_cnt += 1
-            else:
-                needle_down_raw = raw
-                needle_stable_cnt = 0
-
-            if needle_stable_cnt >= HALL_DEBOUNCE and needle_down_raw != needle_down:
-                needle_down = needle_down_raw
-                if needle_down:
-                    on_needle_down()
-                else:
-                    on_needle_up()
-
-            # ── NFC ──
             uid_bytes = pn532.read_passive_target(timeout=0.3)
 
             if uid_bytes is not None:
@@ -456,9 +384,7 @@ def main():
                     album  = config.get("albums", {}).get(uid)
                     if album:
                         with lock:
-                            prepare_album(album)
-                            if needle_down:
-                                on_needle_down()
+                            play_album(album)
                     else:
                         print(f"[ECO] UID no registrado: {uid}")
                         config["pending_uid"] = uid
