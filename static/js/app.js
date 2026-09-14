@@ -92,19 +92,28 @@ document.getElementById('settings-close').addEventListener('click', () => {
 })
 
 document.getElementById('shutdown-btn').addEventListener('click', async () => {
-  const btn = document.getElementById('shutdown-btn')
-  btn.textContent   = 'Reiniciando...'
-  btn.disabled      = true
+  const modalCard = document.querySelector('#settings-modal .modal-card')
+  const btn        = document.getElementById('shutdown-btn')
+  const spinner    = document.getElementById('shutdown-spinner')
+  const label      = document.getElementById('shutdown-btn-label')
+
+  modalCard.classList.add('is-restarting')
+  btn.disabled       = true
+  spinner.hidden     = false
+  label.textContent  = 'Reiniciando...'
 
   try {
     await fetch('/api/shutdown', { method: 'POST' })
-    btn.textContent = 'Reiniciando — esperá unos segundos'
+    label.textContent = 'Reiniciando — esperá unos segundos'
     setTimeout(() => {
       document.getElementById('settings-modal').style.display = 'none'
+      modalCard.classList.remove('is-restarting')
     }, 8000)
   } catch (err) {
-    btn.textContent  = 'Error al reiniciar'
-    btn.disabled     = false
+    modalCard.classList.remove('is-restarting')
+    spinner.hidden     = true
+    btn.disabled       = false
+    label.textContent  = 'Error al reiniciar'
   }
 })
 
