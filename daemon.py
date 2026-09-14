@@ -89,12 +89,18 @@ def get_volume_scale_factor():
 def read_history():
     if not os.path.exists(HISTORY_PATH):
         return []
-    with open(HISTORY_PATH, "r") as f:
-        return json.load(f)
+    try:
+        with open(HISTORY_PATH, "r") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError) as e:
+        print(f"[ECO] history.json corrupto, arranco de cero: {e}")
+        return []
 
 def write_history(history):
-    with open(HISTORY_PATH, "w") as f:
+    tmp_path = HISTORY_PATH + ".tmp"
+    with open(tmp_path, "w") as f:
         json.dump(history, f, indent=2)
+    os.replace(tmp_path, HISTORY_PATH)
 
 def log_history(album, track_name):
     history = read_history()

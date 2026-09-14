@@ -42,3 +42,15 @@ def test_log_history_caps_at_50_entries(tmp_path, monkeypatch):
     assert len(saved) == 50
     assert saved[-1] == {"album": "a", "track_name": "newest", "timestamp": 999.0}
     assert saved[0]["track_name"] == "t1"  # se descartó t0, la más vieja
+
+
+def test_read_history_handles_corrupted_json(tmp_path, monkeypatch, capsys):
+    history_path = tmp_path / "history.json"
+    history_path.write_text("{invalid json content")
+    monkeypatch.setattr(daemon, "HISTORY_PATH", str(history_path))
+
+    result = daemon.read_history()
+
+    assert result == []
+    captured = capsys.readouterr()
+    assert "[ECO] history.json corrupto, arranco de cero:" in captured.out
