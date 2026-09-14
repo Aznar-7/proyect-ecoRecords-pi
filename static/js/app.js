@@ -89,16 +89,17 @@ document.getElementById('settings-close').addEventListener('click', () => {
 
 document.getElementById('shutdown-btn').addEventListener('click', async () => {
   const btn = document.getElementById('shutdown-btn')
-  btn.textContent = 'Apagando...'
-  btn.disabled    = true
+  btn.textContent   = 'Reiniciando...'
+  btn.disabled      = true
+
   try {
     await fetch('/api/shutdown', { method: 'POST' })
-    btn.textContent = 'Apagado — esperá 10 seg y desenchufá'
+    btn.textContent = 'Reiniciando — esperá unos segundos'
     setTimeout(() => {
-      closeModal(document.getElementById('settings-modal'))
+      document.getElementById('settings-modal').style.display = 'none'
     }, 8000)
   } catch (err) {
-    btn.textContent = 'Error al apagar'
+    btn.textContent  = 'Error al reiniciar'
     btn.disabled     = false
   }
 })
