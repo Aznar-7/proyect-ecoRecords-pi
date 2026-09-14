@@ -127,6 +127,7 @@ cd eco
 # Entorno virtual
 python3 -m venv venv
 source venv/bin/activate
+sudo apt install -y sox libsox-fmt-mp3
 pip install flask adafruit-circuitpython-pn532 mutagen RPi.GPIO gpiozero lgpio yt-dlp pi-ina219
 
 # Levantar el servidor y el daemon

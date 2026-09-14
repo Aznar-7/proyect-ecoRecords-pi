@@ -9,6 +9,7 @@ def test_load_track_applies_current_volume_factor(tmp_path, monkeypatch, fake_po
     monkeypatch.setattr(daemon, "CONFIG_PATH", str(config_path))
     monkeypatch.setattr(daemon, "HISTORY_PATH", str(tmp_path / "history.json"))
     monkeypatch.setattr(daemon, "get_duration", lambda path: 180)
+    monkeypatch.setattr(daemon, "get_filtered_track_path", lambda path: path)
 
     daemon.current_album = "test-album"
     daemon.current_tracks = ["01 - Song.mp3"]

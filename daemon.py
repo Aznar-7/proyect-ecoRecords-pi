@@ -5,6 +5,7 @@ NFC identifica el disco y reproduce directo (Hall desactivado temporalmente).
 Audio real via subprocess limpio por pista, motor sincronizado.
 """
 
+import hashlib
 import json
 import os
 import time
@@ -33,6 +34,9 @@ MOTOR_DELAY = 0.002
 BATTERY_POLL_INTERVAL = 7  # segundos
 BATTERY_VOLTAGE_EMPTY = 3.0
 BATTERY_VOLTAGE_FULL  = 4.2
+
+FILTER_CACHE_DIR = os.path.join(BASE_DIR, ".filter_cache")
+HIGHPASS_HZ      = 120
 
 current_uid       = None
 current_album     = None
@@ -244,6 +248,34 @@ def get_duration(track_path):
         print(f"[ECO] No se pudo leer duracion: {e}")
         return 0
 
+# ── Filtro de graves (pasa-altos, cacheado) ───
+def _filter_cache_path(track_path):
+    mtime = int(os.path.getmtime(track_path))
+    key = f"{track_path}|{mtime}|{HIGHPASS_HZ}"
+    digest = hashlib.sha1(key.encode("utf-8")).hexdigest()[:16]
+    return os.path.join(FILTER_CACHE_DIR, f"{digest}.mp3")
+
+def get_filtered_track_path(track_path):
+    """Pasa-altos suave (~120Hz) para reducir distorsión de graves en
+    parlantes chicos. Se cachea: solo se filtra la primera vez que se
+    reproduce cada pista. Si el filtro falla por lo que sea, se reproduce
+    el original — esta función nunca debe romper la reproducción."""
+    os.makedirs(FILTER_CACHE_DIR, exist_ok=True)
+    cache_path = _filter_cache_path(track_path)
+
+    if os.path.exists(cache_path):
+        return cache_path
+
+    try:
+        subprocess.run(
+            ["sox", track_path, cache_path, "highpass", str(HIGHPASS_HZ)],
+            check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
+        return cache_path
+    except Exception as e:
+        print(f"[ECO] Filtro de graves falló, reproduciendo original: {e}")
+        return track_path
+
 # ── Control de audio (proceso limpio por pista) ──
 def build_mpg123_command(track_path, volume_factor, skip_frames=None):
     """Arma el comando de mpg123 aplicando el volumen actual y, si se pasa
@@ -298,8 +330,9 @@ def load_track(index):
     track_started         = True
 
     volume_factor = get_volume_scale_factor()
+    playback_path = get_filtered_track_path(track_path)
     current_process = subprocess.Popen(
-        build_mpg123_command(track_path, volume_factor),
+        build_mpg123_command(playback_path, volume_factor),
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
     )
 
@@ -369,8 +402,9 @@ def _resume_now():
     skip_frames = int(resume_at * 38)
 
     volume_factor = get_volume_scale_factor()
+    playback_path = get_filtered_track_path(track_path)
     current_process = subprocess.Popen(
-        build_mpg123_command(track_path, volume_factor, skip_frames=skip_frames),
+        build_mpg123_command(playback_path, volume_factor, skip_frames=skip_frames),
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
     )
     t = threading.Thread(target=watch_process, args=(current_process, session), daemon=True)

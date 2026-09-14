@@ -46,6 +46,7 @@ def test_play_album_counts_once_even_with_multiple_tracks(tmp_path, monkeypatch,
     monkeypatch.setattr(daemon, "get_tracks", lambda album: ["01 - A.mp3", "02 - B.mp3"])
     monkeypatch.setattr(daemon, "start_motor", lambda: None)
     monkeypatch.setattr(daemon, "log_history", lambda *args, **kwargs: None)
+    monkeypatch.setattr(daemon, "get_filtered_track_path", lambda path: path)
 
     daemon.play_album("thriller")
     daemon.next_track()
