@@ -89,7 +89,9 @@ Una PWA instalable (sin necesidad de tienda de apps) — biblioteca de discos y 
 - [x] Diseño 3D completo de la carcasa (Fusion 360): cámaras acústicas selladas, plataforma del disco, pivote del brazo, tapa con bisagra
 - [x] Discos personalizados (vinilos decorativos + tag NFC + imán pegados abajo)
 - [x] Impresión 3D final y armado de la carcasa
-- [ ] Ajuste fino de estéreo real (selección de canal izquierdo/derecho)
+- [x] Ajuste fino de estéreo real (selección de canal izquierdo/derecho)
+- [ ] Mejoras UI (porcentaje bateria, mejoras de QOL, estadisticas)
+- [ ] Panel de conexion WIFI como puerto de conexion cuando no esta conectado a nada
 - [ ] Control de volumen por software
 - [ ] Packaging de los álbumes (fundas tipo vinilo)
 
