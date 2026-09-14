@@ -5,6 +5,7 @@
 const state = {
   playing: false,
   volume: 70,
+  battery: { percent: null, charging: false },
   trackName: '—',
   trackSub: '—',
   discTag: '—',
@@ -37,6 +38,9 @@ const els = {
   volumeSlider:   $('volume-slider'),
   volumeDisplay:  $('volume-display'),
   albumsList:     $('albums-list'),
+  batteryIndicator: $('battery-indicator'),
+  batteryFill:      $('battery-icon-fill'),
+  batteryPct:       $('battery-pct'),
 }
 
 const ICON_PAUSE = `
@@ -257,6 +261,7 @@ async function loadStatus() {
     if (!state.initialized) state.playing = data.is_playing || false
     state.initialized = true
     state.volume      = data.volume
+    state.battery     = data.battery || { percent: null, charging: false }
     state.track       = data.track || 0
     state.totalTracks = data.total_tracks || 0
     state.playing       = data.is_playing || false
@@ -444,6 +449,7 @@ function renderAll() {
 
   if (!state.draggingVolume) renderVolume(state.volume)
   renderProgress()
+  renderBattery()
 
   const hasAlbum = state.totalTracks > 0
   els.playBtn.disabled = !hasAlbum
@@ -461,6 +467,20 @@ function renderVolume(val) {
     var(--border) ${val}%,
     var(--border) 100%
   )`
+}
+
+function renderBattery() {
+  const { percent, charging } = state.battery
+  if (percent === null || percent === undefined) {
+    els.batteryIndicator.hidden = true
+    return
+  }
+  els.batteryIndicator.hidden = false
+  els.batteryPct.textContent = percent + '%'
+  const clamped = Math.max(0, Math.min(100, percent))
+  els.batteryFill.setAttribute('width', (clamped / 100 * 12.6).toFixed(1))
+  els.batteryIndicator.classList.toggle('low', percent < 20)
+  els.batteryIndicator.classList.toggle('charging', charging)
 }
 
 // ── Eventos: play/pause ──────────────────────

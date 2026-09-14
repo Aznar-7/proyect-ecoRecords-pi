@@ -67,6 +67,7 @@ def status():
         "elapsed":      now.get("elapsed", 0),
         "duration":     now.get("duration", 0),
         "volume":       config.get("volume", 70),
+        "battery":      config.get("battery", {"percent": None, "charging": False}),
         "albums":       list(config.get("albums", {}).values()),
         "pending_uid":  config.get("pending_uid", None)
     })
