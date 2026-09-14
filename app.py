@@ -33,8 +33,6 @@ def reset_now_playing():
     except Exception:
         pass
 
-reset_now_playing()
-
 @app.after_request
 def no_cache(response):
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
@@ -361,4 +359,5 @@ def service_worker():
     return response
 
 if __name__ == "__main__":
+    reset_now_playing()
     app.run(host="0.0.0.0", port=5000)
