@@ -70,6 +70,13 @@ def clear_command():
     config["command"] = None
     write_full_config(config)
 
+def get_volume_scale_factor():
+    """Convierte el volumen guardado en config.json (0-100) al factor de
+    escala que espera mpg123 (-f), donde 32768 = 100%."""
+    config = read_config()
+    volume_pct = config.get("volume", 70)
+    return int((volume_pct / 100) * 32768)
+
 # ── NFC ──────────────────────────────────────
 def init_nfc():
     print("[ECO] Inicializando lector NFC...")
@@ -154,6 +161,15 @@ def get_duration(track_path):
         return 0
 
 # ── Control de audio (proceso limpio por pista) ──
+def build_mpg123_command(track_path, volume_factor, skip_frames=None):
+    """Arma el comando de mpg123 aplicando el volumen actual y, si se pasa
+    skip_frames, arrancando desde ese punto (usado al reanudar)."""
+    cmd = ["mpg123", "-q", "-f", str(volume_factor)]
+    if skip_frames is not None:
+        cmd += ["-k", str(skip_frames)]
+    cmd += ["--audiodevice", "plughw:0,0", track_path]
+    return cmd
+
 def kill_current_process():
     global current_process
     if current_process and current_process.poll() is None:
@@ -197,8 +213,9 @@ def load_track(index):
     is_paused            = False
     track_started         = True
 
+    volume_factor = get_volume_scale_factor()
     current_process = subprocess.Popen(
-        ["mpg123", "-q", "--audiodevice", "plughw:0,0", track_path],
+        build_mpg123_command(track_path, volume_factor),
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
     )
 
@@ -265,8 +282,9 @@ def _resume_now():
     track_path = os.path.join(ALBUMS_PATH, current_album, current_tracks[current_index])
     skip_frames = int(resume_at * 38)
 
+    volume_factor = get_volume_scale_factor()
     current_process = subprocess.Popen(
-        ["mpg123", "-q", "-k", str(skip_frames), "--audiodevice", "plughw:0,0", track_path],
+        build_mpg123_command(track_path, volume_factor, skip_frames=skip_frames),
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
     )
     t = threading.Thread(target=watch_process, args=(current_process, session), daemon=True)
