@@ -17,9 +17,12 @@ from adafruit_pn532.i2c import PN532_I2C
 from mutagen.mp3 import MP3
 from ina219 import INA219
 
-BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
-CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
-ALBUMS_PATH = os.path.join(BASE_DIR, "albums")
+BASE_DIR     = os.path.dirname(os.path.abspath(__file__))
+CONFIG_PATH  = os.path.join(BASE_DIR, "config.json")
+ALBUMS_PATH  = os.path.join(BASE_DIR, "albums")
+HISTORY_PATH = os.path.join(BASE_DIR, "history.json")
+
+HISTORY_LIMIT = 50
 
 MISS_THRESHOLD = 15
 
@@ -81,6 +84,22 @@ def get_volume_scale_factor():
     config = read_config()
     volume_pct = config.get("volume", 70)
     return int((volume_pct / 100) * 32768)
+
+# ── Historial de reproducción ─────────────────
+def read_history():
+    if not os.path.exists(HISTORY_PATH):
+        return []
+    with open(HISTORY_PATH, "r") as f:
+        return json.load(f)
+
+def write_history(history):
+    with open(HISTORY_PATH, "w") as f:
+        json.dump(history, f, indent=2)
+
+def log_history(album, track_name):
+    history = read_history()
+    history.append({"album": album, "track_name": track_name, "timestamp": time.time()})
+    write_history(history[-HISTORY_LIMIT:])
 
 # ── NFC ──────────────────────────────────────
 def init_nfc():
@@ -260,6 +279,7 @@ def load_track(index):
 
     track_name = clean_track_name(current_tracks[index])
     print(f"[ECO] Reproduciendo: {track_name} ({current_duration}s)")
+    log_history(current_album, track_name)
     write_state(current_album, index + 1, track_name, len(current_tracks), True, 0, current_duration)
 
 def play_album(album_name):

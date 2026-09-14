@@ -19,6 +19,11 @@ albums/
 # Configuración con datos reales (UIDs de tags)
 # config.json   ← lo dejamos SIN comentar por ahora, subimos el de ejemplo
 
+# Datos generados en runtime (a diferencia de config.json, no hay versión de ejemplo)
+history.json
+stats.json
+.filter_cache/
+
 # Sistema
 .DS_Store
 *.log

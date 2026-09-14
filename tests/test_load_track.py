@@ -7,6 +7,7 @@ def test_load_track_applies_current_volume_factor(tmp_path, monkeypatch, fake_po
     config_path = tmp_path / "config.json"
     config_path.write_text(json.dumps({"volume": 50}))
     monkeypatch.setattr(daemon, "CONFIG_PATH", str(config_path))
+    monkeypatch.setattr(daemon, "HISTORY_PATH", str(tmp_path / "history.json"))
     monkeypatch.setattr(daemon, "get_duration", lambda path: 180)
 
     daemon.current_album = "test-album"
