@@ -15,6 +15,7 @@ import busio
 import RPi.GPIO as GPIO
 from adafruit_pn532.i2c import PN532_I2C
 from mutagen.mp3 import MP3
+from ina219 import INA219
 
 BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
@@ -24,6 +25,10 @@ MISS_THRESHOLD = 15
 
 MOTOR_PINS  = [5, 6, 13, 26]
 MOTOR_DELAY = 0.002
+
+BATTERY_POLL_INTERVAL = 7  # segundos
+BATTERY_VOLTAGE_EMPTY = 3.0
+BATTERY_VOLTAGE_FULL  = 4.2
 
 current_uid       = None
 current_album     = None
@@ -135,6 +140,37 @@ def stop_motor():
         return
     motor_running = False
     print("[ECO] Motor: detenido")
+
+# ── Batería (UPS HAT, INA219) ─────────────────
+def battery_percent(voltage):
+    span = BATTERY_VOLTAGE_FULL - BATTERY_VOLTAGE_EMPTY
+    pct = round((voltage - BATTERY_VOLTAGE_EMPTY) / span * 100)
+    return max(0, min(100, pct))
+
+def read_battery(ina):
+    voltage = ina.voltage()
+    current = ina.current()
+    return {"percent": battery_percent(voltage), "charging": current > 0}
+
+def update_battery_config(ina):
+    battery = read_battery(ina)
+    config = read_config()
+    config["battery"] = battery
+    write_full_config(config)
+
+def init_battery():
+    ina = INA219(shunt_ohms=0.1, address=0x43, busnum=1)
+    ina.configure()
+    print("[ECO] Sensor de batería (INA219) listo")
+    return ina
+
+def battery_ticker(ina):
+    while True:
+        try:
+            update_battery_config(ina)
+        except Exception as e:
+            print(f"[ECO] Error leyendo batería: {e}")
+        time.sleep(BATTERY_POLL_INTERVAL)
 
 # ── Pistas ───────────────────────────────────
 def get_tracks(album_name):
@@ -381,6 +417,11 @@ def main():
 
     ticker = threading.Thread(target=progress_ticker, daemon=True)
     ticker.start()
+
+    ina = init_battery()
+    update_battery_config(ina)  # primer valor disponible de inmediato, sin esperar al primer tick
+    battery_thread = threading.Thread(target=battery_ticker, args=(ina,), daemon=True)
+    battery_thread.start()
 
     print("[ECO] Esperando discos...\n")
 
