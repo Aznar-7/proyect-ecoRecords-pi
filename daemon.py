@@ -21,6 +21,7 @@ BASE_DIR     = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH  = os.path.join(BASE_DIR, "config.json")
 ALBUMS_PATH  = os.path.join(BASE_DIR, "albums")
 HISTORY_PATH = os.path.join(BASE_DIR, "history.json")
+STATS_PATH   = os.path.join(BASE_DIR, "stats.json")
 
 HISTORY_LIMIT = 50
 
@@ -106,6 +107,28 @@ def log_history(album, track_name):
     history = read_history()
     history.append({"album": album, "track_name": track_name, "timestamp": time.time()})
     write_history(history[-HISTORY_LIMIT:])
+
+# ── Estadísticas de uso ───────────────────────
+def read_stats():
+    if not os.path.exists(STATS_PATH):
+        return {}
+    try:
+        with open(STATS_PATH, "r") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError) as e:
+        print(f"[ECO] stats.json corrupto, arranco de cero: {e}")
+        return {}
+
+def write_stats(stats):
+    tmp_path = STATS_PATH + ".tmp"
+    with open(tmp_path, "w") as f:
+        json.dump(stats, f, indent=2)
+    os.replace(tmp_path, STATS_PATH)
+
+def increment_album_stat(album):
+    stats = read_stats()
+    stats[album] = stats.get(album, 0) + 1
+    write_stats(stats)
 
 # ── NFC ──────────────────────────────────────
 def init_nfc():
@@ -298,6 +321,7 @@ def play_album(album_name):
         write_state(album_name, 0, None, 0, False)
         return
 
+    increment_album_stat(album_name)
     current_album  = album_name
     current_tracks = tracks
     current_index  = 0
