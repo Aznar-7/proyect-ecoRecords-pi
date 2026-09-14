@@ -61,7 +61,7 @@ function navigateTo(view) {
     btn.querySelector('.nav-icon-wrap').classList.toggle('active', isActive)
   })
   state.currentView = view
-  if (view === 'discos') loadAlbums()
+  if (view === 'discos') { loadAlbums(); loadLibraryExtras() }
 }
 
 document.querySelectorAll('.nav-item').forEach(btn => {
@@ -586,6 +586,45 @@ async function loadAlbums() {
       </div>
     `
   }
+}
+
+function timeAgo(timestamp) {
+  const diffMin = Math.floor((Date.now() / 1000 - timestamp) / 60)
+  if (diffMin < 1) return 'ahora'
+  if (diffMin < 60) return `hace ${diffMin} min`
+  const diffH = Math.floor(diffMin / 60)
+  if (diffH < 24) return `hace ${diffH} h`
+  return `hace ${Math.floor(diffH / 24)} d`
+}
+
+async function loadLibraryExtras() {
+  try {
+    const [albumsRes, historyRes] = await Promise.all([
+      fetch('/api/albums'), fetch('/api/history'),
+    ])
+    const albums  = await albumsRes.json()
+    const history = await historyRes.json()
+
+    const albumNames = {}
+    albums.forEach(a => { albumNames[a.id] = a.name })
+
+    renderHistory(history, albumNames)
+  } catch (err) { console.warn('Error cargando historial:', err) }
+}
+
+function renderHistory(history, albumNames) {
+  const section = $('history-section')
+  if (!history.length) { section.hidden = true; return }
+  section.hidden = false
+  $('history-list').innerHTML = history.slice(0, 8).map(entry => `
+    <div class="history-item">
+      <div class="history-item-text">
+        <p class="history-item-track">${entry.track_name || '—'}</p>
+        <p class="history-item-album">${albumNames[entry.album] || entry.album}</p>
+      </div>
+      <span class="history-item-time">${timeAgo(entry.timestamp)}</span>
+    </div>
+  `).join('')
 }
 
 async function showAlbumDetail(album) {

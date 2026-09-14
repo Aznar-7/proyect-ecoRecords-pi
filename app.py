@@ -6,9 +6,10 @@ import threading
 
 app = Flask(__name__)
 
-BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
-CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
-ALBUMS_PATH = os.path.join(BASE_DIR, "albums")
+BASE_DIR     = os.path.dirname(os.path.abspath(__file__))
+CONFIG_PATH  = os.path.join(BASE_DIR, "config.json")
+ALBUMS_PATH  = os.path.join(BASE_DIR, "albums")
+HISTORY_PATH = os.path.join(BASE_DIR, "history.json")
 
 def read_config():
     with open(CONFIG_PATH, "r") as f:
@@ -144,6 +145,15 @@ def album_cover(album_id):
     if os.path.exists(cover_path):
         return send_from_directory(album_path, "cover.jpg")
     abort(404)
+
+# ── API: historial de reproducción ────────────
+@app.route("/api/history")
+def get_history():
+    if not os.path.exists(HISTORY_PATH):
+        return jsonify([])
+    with open(HISTORY_PATH, "r") as f:
+        history = json.load(f)
+    return jsonify(list(reversed(history)))
 
 # ── API: cambiar volumen ──────────────────────
 @app.route("/api/volume", methods=["POST"])
