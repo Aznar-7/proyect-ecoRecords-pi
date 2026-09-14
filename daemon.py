@@ -418,10 +418,13 @@ def main():
     ticker = threading.Thread(target=progress_ticker, daemon=True)
     ticker.start()
 
-    ina = init_battery()
-    update_battery_config(ina)  # primer valor disponible de inmediato, sin esperar al primer tick
-    battery_thread = threading.Thread(target=battery_ticker, args=(ina,), daemon=True)
-    battery_thread.start()
+    try:
+        ina = init_battery()
+        update_battery_config(ina)  # primer valor disponible de inmediato, sin esperar al primer tick
+        battery_thread = threading.Thread(target=battery_ticker, args=(ina,), daemon=True)
+        battery_thread.start()
+    except Exception as e:
+        print(f"[ECO] Batería no disponible, sigo sin reportarla: {e}")
 
     print("[ECO] Esperando discos...\n")
 
