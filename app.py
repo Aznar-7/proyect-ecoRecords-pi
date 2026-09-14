@@ -10,6 +10,7 @@ BASE_DIR     = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH  = os.path.join(BASE_DIR, "config.json")
 ALBUMS_PATH  = os.path.join(BASE_DIR, "albums")
 HISTORY_PATH = os.path.join(BASE_DIR, "history.json")
+STATS_PATH   = os.path.join(BASE_DIR, "stats.json")
 
 def read_config():
     with open(CONFIG_PATH, "r") as f:
@@ -154,6 +155,16 @@ def get_history():
     with open(HISTORY_PATH, "r") as f:
         history = json.load(f)
     return jsonify(list(reversed(history)))
+
+# ── API: estadísticas de uso ──────────────────
+@app.route("/api/stats")
+def get_stats():
+    if not os.path.exists(STATS_PATH):
+        return jsonify({"albums": {}, "top_album": None})
+    with open(STATS_PATH, "r") as f:
+        stats = json.load(f)
+    top_album = max(stats, key=stats.get) if stats else None
+    return jsonify({"albums": stats, "top_album": top_album})
 
 # ── API: cambiar volumen ──────────────────────
 @app.route("/api/volume", methods=["POST"])

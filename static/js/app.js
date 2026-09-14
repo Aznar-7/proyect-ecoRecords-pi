@@ -588,6 +588,12 @@ async function loadAlbums() {
   }
 }
 
+function escapeHtml(str) {
+  const div = document.createElement('div')
+  div.textContent = str
+  return div.innerHTML
+}
+
 function timeAgo(timestamp) {
   const diffMin = Math.floor((Date.now() / 1000 - timestamp) / 60)
   if (diffMin < 1) return 'ahora'
@@ -599,17 +605,26 @@ function timeAgo(timestamp) {
 
 async function loadLibraryExtras() {
   try {
-    const [albumsRes, historyRes] = await Promise.all([
-      fetch('/api/albums'), fetch('/api/history'),
+    const [albumsRes, historyRes, statsRes] = await Promise.all([
+      fetch('/api/albums'), fetch('/api/history'), fetch('/api/stats'),
     ])
     const albums  = await albumsRes.json()
     const history = await historyRes.json()
+    const stats   = await statsRes.json()
 
     const albumNames = {}
     albums.forEach(a => { albumNames[a.id] = a.name })
 
+    renderStatsHighlight(stats, albumNames)
     renderHistory(history, albumNames)
-  } catch (err) { console.warn('Error cargando historial:', err) }
+  } catch (err) { console.warn('Error cargando historial/estadísticas:', err) }
+}
+
+function renderStatsHighlight(stats, albumNames) {
+  const el = $('stats-highlight')
+  if (!stats.top_album) { el.hidden = true; return }
+  el.hidden = false
+  $('stats-top-album').textContent = albumNames[stats.top_album] || stats.top_album
 }
 
 function renderHistory(history, albumNames) {
@@ -619,8 +634,8 @@ function renderHistory(history, albumNames) {
   $('history-list').innerHTML = history.slice(0, 8).map(entry => `
     <div class="history-item">
       <div class="history-item-text">
-        <p class="history-item-track">${entry.track_name || '—'}</p>
-        <p class="history-item-album">${albumNames[entry.album] || entry.album}</p>
+        <p class="history-item-track">${escapeHtml(entry.track_name || '—')}</p>
+        <p class="history-item-album">${escapeHtml(albumNames[entry.album] || entry.album)}</p>
       </div>
       <span class="history-item-time">${timeAgo(entry.timestamp)}</span>
     </div>
