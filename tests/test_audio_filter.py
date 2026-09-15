@@ -126,3 +126,43 @@ def test_get_filtered_track_path_leaves_no_corrupt_file_if_sox_dies_mid_write(tm
     final_cache_path = daemon._filter_cache_path(str(track))
     assert result == str(track)
     assert not os.path.exists(final_cache_path)
+
+
+def test_enforce_filter_cache_limit_does_nothing_under_limit(tmp_path, monkeypatch):
+    cache_dir = tmp_path / "cache"
+    cache_dir.mkdir()
+    monkeypatch.setattr(daemon, "FILTER_CACHE_DIR", str(cache_dir))
+    monkeypatch.setattr(daemon, "FILTER_CACHE_MAX_BYTES", 1000)
+    small_file = cache_dir / "a.mp3"
+    _touch(small_file, b"x" * 100)
+
+    daemon._enforce_filter_cache_limit()
+
+    assert small_file.exists()
+
+
+def test_enforce_filter_cache_limit_evicts_oldest_first_until_under_limit(tmp_path, monkeypatch):
+    cache_dir = tmp_path / "cache"
+    cache_dir.mkdir()
+    monkeypatch.setattr(daemon, "FILTER_CACHE_DIR", str(cache_dir))
+    monkeypatch.setattr(daemon, "FILTER_CACHE_MAX_BYTES", 150)
+
+    old_file = cache_dir / "old.mp3"
+    _touch(old_file, b"x" * 100)
+    os.utime(old_file, (1000, 1000))  # el más viejo
+
+    newer_file = cache_dir / "newer.mp3"
+    _touch(newer_file, b"x" * 100)
+    os.utime(newer_file, (2000, 2000))
+
+    daemon._enforce_filter_cache_limit()
+
+    assert not old_file.exists()
+    assert newer_file.exists()
+
+
+def test_enforce_filter_cache_limit_ignores_missing_cache_dir(tmp_path, monkeypatch):
+    monkeypatch.setattr(daemon, "FILTER_CACHE_DIR", str(tmp_path / "no-existe"))
+    monkeypatch.setattr(daemon, "FILTER_CACHE_MAX_BYTES", 1000)
+
+    daemon._enforce_filter_cache_limit()  # no debe lanzar excepción

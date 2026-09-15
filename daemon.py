@@ -36,6 +36,12 @@ BATTERY_VOLTAGE_EMPTY = 3.0
 BATTERY_VOLTAGE_FULL  = 4.2
 
 FILTER_CACHE_DIR = os.path.join(BASE_DIR, ".filter_cache")
+# Cada vez que se ajusta la receta del filtro (frecuencia, normalización,
+# calidad de reencode) las entradas viejas quedan huérfanas — no se
+# vuelven a usar, pero tampoco se borran solas. Con archivos de hasta
+# 320kbps eso puede llenar la SD con el tiempo, así que ponemos un tope y
+# vamos borrando lo más viejo antes de que se pase.
+FILTER_CACHE_MAX_BYTES = 300 * 1024 * 1024  # ~300MB
 # Antes usábamos un pasa-altos duro (corte total por debajo de 120Hz), pero
 # eso eliminaba contenido musical real en temas con bajo protagónico (ej. la
 # línea de bajo de "Beat It" sonaba "sin cuerpo"). Un shelf suave ATENÚA
@@ -328,6 +334,35 @@ def get_duration(track_path):
         return 0
 
 # ── Filtro de graves + normalización de volumen (cacheado) ───
+def _enforce_filter_cache_limit():
+    """Si .filter_cache/ pasó el tope de tamaño, borra las entradas más
+    viejas (por fecha de modificación, no de acceso — muchas Pi montan la
+    SD con noatime) hasta volver a estar debajo del límite. Nunca debe
+    romper la reproducción: cualquier error de filesystem se ignora."""
+    try:
+        entries = [
+            os.path.join(FILTER_CACHE_DIR, name)
+            for name in os.listdir(FILTER_CACHE_DIR)
+            if name.endswith(".mp3")
+        ]
+    except OSError:
+        return
+
+    total_size = sum(os.path.getsize(p) for p in entries if os.path.exists(p))
+    if total_size <= FILTER_CACHE_MAX_BYTES:
+        return
+
+    entries.sort(key=lambda p: os.path.getmtime(p))
+    for path in entries:
+        if total_size <= FILTER_CACHE_MAX_BYTES:
+            break
+        try:
+            size = os.path.getsize(path)
+            os.remove(path)
+            total_size -= size
+        except OSError:
+            pass
+
 def _filter_cache_path(track_path):
     mtime = int(os.path.getmtime(track_path))
     key = (
@@ -368,6 +403,7 @@ def get_filtered_track_path(track_path):
             check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         )
         os.replace(tmp_output, cache_path)
+        _enforce_filter_cache_limit()
         return cache_path
     except Exception as e:
         print(f"[ECO] Filtro de graves falló, reproduciendo original: {e}")
