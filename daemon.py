@@ -104,6 +104,32 @@ def read_command():
     config = read_config()
     return config.get("command")
 
+def handle_nfc_miss(miss_count):
+    """Procesa un ciclo del loop principal sin lectura NFC exitosa.
+    Mientras está pausado, el disco queda quieto en una posición fija que
+    puede no estar bien alineada con el lector — a diferencia de cuando
+    gira, donde el tag vuelve a pasar por el lector periódicamente. Por
+    eso, en pausa, un fallo de lectura no cuenta hacia el umbral de
+    "disco retirado". Devuelve (nuevo_miss_count, si hay que considerar
+    el disco retirado)."""
+    if is_paused:
+        return 0, False
+    miss_count += 1
+    return miss_count, miss_count >= MISS_THRESHOLD
+
+def recheck_current_uid():
+    """Se llama cuando la webapp asocia un disco recién detectado
+    (/api/learn). Si el disco que sigue apoyado ahora tiene álbum,
+    arranca la reproducción sin esperar a que se retire y se vuelva a
+    apoyar — el loop principal solo reacciona a un CAMBIO de UID."""
+    if current_uid is None:
+        return
+    config = read_config()
+    album = config.get("albums", {}).get(current_uid)
+    if album:
+        with lock:
+            play_album(album)
+
 def clear_command():
     config = read_config()
     config["command"] = None
@@ -493,6 +519,8 @@ def handle_commands():
         next_track()
     elif cmd == "prev":
         prev_track()
+    elif cmd == "recheck_uid":
+        recheck_current_uid()
     clear_command()
 
 # ── Ticker de progreso ────────────────────────
@@ -563,8 +591,8 @@ def main():
                         write_full_config(config)
             else:
                 if current_uid is not None:
-                    miss_count += 1
-                    if miss_count >= MISS_THRESHOLD:
+                    miss_count, should_remove = handle_nfc_miss(miss_count)
+                    if should_remove:
                         print("[ECO] Disco retirado")
                         with lock:
                             stop_playback()

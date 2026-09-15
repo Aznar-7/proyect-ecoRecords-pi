@@ -225,6 +225,10 @@ def learn_disc():
     config = read_config()
     config["albums"][uid] = album
     config.pop("pending_uid", None)
+    # El disco recién aprendido puede seguir apoyado: el daemon solo
+    # reacciona a un CAMBIO de UID, así que sin este comando el audio no
+    # arrancaría hasta sacar y volver a poner el disco.
+    config["command"] = "recheck_uid"
 
     write_config(config)
     print(f"[ECO] Disco aprendido: {uid} -> {album}")
