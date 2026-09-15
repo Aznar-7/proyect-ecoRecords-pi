@@ -76,6 +76,12 @@ def test_get_filtered_track_path_runs_sox_on_cache_miss(tmp_path, monkeypatch):
     assert "bass" in calls[0]
     assert str(daemon.BASS_SHELF_GAIN_DB) in calls[0]
     assert str(daemon.BASS_SHELF_HZ) in calls[0]
+    assert "norm" in calls[0]
+    assert str(daemon.NORM_TARGET_DB) in calls[0]
+    # El orden importa: normalizar tiene que medir el pico DESPUÉS del
+    # shelf de graves, no antes — si no, el volumen final no refleja el
+    # audio que realmente se va a reproducir.
+    assert calls[0].index("bass") < calls[0].index("norm")
 
 
 def test_get_filtered_track_path_falls_back_to_original_on_sox_failure(tmp_path, monkeypatch):

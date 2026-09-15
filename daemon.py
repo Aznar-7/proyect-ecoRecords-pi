@@ -44,6 +44,13 @@ FILTER_CACHE_DIR = os.path.join(BASE_DIR, ".filter_cache")
 BASS_SHELF_HZ      = 80
 BASS_SHELF_GAIN_DB = -6
 
+# Cada álbum viene masterizado a un volumen distinto (temas viejos suelen
+# ser más flojos que masterizaciones modernas) — normalizar el pico de
+# cada pista a un nivel parejo evita saltos de volumen al cambiar de disco
+# y aprovecha todo el rango disponible en vez de sonar bajo. -1dB de
+# margen (no 0dB exacto) para no arriesgar recorte en la conversión D/A.
+NORM_TARGET_DB = -1
+
 current_uid       = None
 current_album     = None
 current_tracks    = []
@@ -306,20 +313,23 @@ def get_duration(track_path):
         print(f"[ECO] No se pudo leer duracion: {e}")
         return 0
 
-# ── Filtro de graves (pasa-altos, cacheado) ───
+# ── Filtro de graves + normalización de volumen (cacheado) ───
 def _filter_cache_path(track_path):
     mtime = int(os.path.getmtime(track_path))
-    key = f"{track_path}|{mtime}|bass|{BASS_SHELF_GAIN_DB}|{BASS_SHELF_HZ}"
+    key = f"{track_path}|{mtime}|bass|{BASS_SHELF_GAIN_DB}|{BASS_SHELF_HZ}|norm|{NORM_TARGET_DB}"
     digest = hashlib.sha1(key.encode("utf-8")).hexdigest()[:16]
     return os.path.join(FILTER_CACHE_DIR, f"{digest}.mp3")
 
 def get_filtered_track_path(track_path):
     """Atenúa (no elimina) los graves por debajo de ~80Hz con un shelf
     suave, para reducir la distorsión por exceso de excursión en parlantes
-    chicos sin perder el cuerpo/línea de bajo de la canción. Se cachea:
-    solo se procesa la primera vez que se reproduce cada pista. Si el
-    filtro falla por lo que sea, se reproduce el original — esta función
-    nunca debe romper la reproducción."""
+    chicos sin perder el cuerpo/línea de bajo de la canción — y después
+    normaliza el pico resultante a un nivel parejo, para que todos los
+    álbumes suenen a un volumen consistente y usando todo el rango
+    disponible en vez de sonar bajo. Se cachea: solo se procesa la primera
+    vez que se reproduce cada pista. Si el filtro falla por lo que sea, se
+    reproduce el original — esta función nunca debe romper la
+    reproducción."""
     os.makedirs(FILTER_CACHE_DIR, exist_ok=True)
     cache_path = _filter_cache_path(track_path)
 
@@ -328,7 +338,11 @@ def get_filtered_track_path(track_path):
 
     try:
         subprocess.run(
-            ["sox", track_path, cache_path, "bass", str(BASS_SHELF_GAIN_DB), str(BASS_SHELF_HZ)],
+            [
+                "sox", track_path, cache_path,
+                "bass", str(BASS_SHELF_GAIN_DB), str(BASS_SHELF_HZ),
+                "norm", str(NORM_TARGET_DB),
+            ],
             check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         )
         return cache_path
