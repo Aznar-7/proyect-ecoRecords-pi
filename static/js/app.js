@@ -61,7 +61,8 @@ function navigateTo(view) {
     btn.querySelector('.nav-icon-wrap').classList.toggle('active', isActive)
   })
   state.currentView = view
-  if (view === 'discos') { loadAlbums(); loadLibraryExtras() }
+  if (view === 'discos') loadAlbums()
+  if (view === 'actividad') loadLibraryExtras()
 }
 
 document.querySelectorAll('.nav-item').forEach(btn => {
@@ -626,6 +627,7 @@ async function loadLibraryExtras() {
 
     renderStatsHighlight(stats, albumNames)
     renderHistory(history, albumNames)
+    $('activity-empty').hidden = Boolean(stats.top_album) || history.length > 0
   } catch (err) { console.warn('Error cargando historial/estadísticas:', err) }
 }
 

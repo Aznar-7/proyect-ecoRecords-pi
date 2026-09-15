@@ -32,6 +32,15 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Varias clases (.stats-highlight, .albums-empty, etc.) declaran su propio
+   `display` para su layout normal (flex/grid). Sin esta regla, ese
+   `display` de autor le gana en cascada al `[hidden]{display:none}` por
+   defecto del navegador, y el elemento queda visible aunque JS haya
+   puesto `el.hidden = true`. */
+[hidden] {
+  display: none !important;
+}
+
 html, body {
   height: 100%;
   background: var(--bg);

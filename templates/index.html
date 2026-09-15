@@ -124,6 +124,24 @@
       </div>
     </header>
 
+    <div class="albums-list" id="albums-list">
+      <!-- Se llena desde JS -->
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════
+       VISTA: ACTIVIDAD
+  ════════════════════════════════════ -->
+  <div id="view-actividad" class="view">
+
+    <header class="app-header">
+      <div class="app-title">
+        <p class="app-label">Tu uso</p>
+        <h1 class="app-name serif">Tu <em>Actividad</em></h1>
+      </div>
+    </header>
+
     <div class="library-extra" id="library-extra">
       <div class="stats-highlight" id="stats-highlight" hidden>
         <span class="stats-highlight-label">Más escuchado</span>
@@ -134,10 +152,18 @@
         <p class="section-heading">Escuchado recientemente</p>
         <div class="history-list" id="history-list"></div>
       </div>
-    </div>
 
-    <div class="albums-list" id="albums-list">
-      <!-- Se llena desde JS -->
+      <div class="albums-empty" id="activity-empty" hidden>
+        <div class="albums-empty-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="6" y1="20" x2="6" y2="12"/>
+            <line x1="12" y1="20" x2="12" y2="6"/>
+            <line x1="18" y1="20" x2="18" y2="14"/>
+          </svg>
+        </div>
+        <p class="albums-empty-title">Todavía no hay actividad</p>
+        <p class="albums-empty-sub">Escuchá algún disco y<br>tu historial va a aparecer acá</p>
+      </div>
     </div>
 
   </div>
@@ -231,6 +257,16 @@
         </svg>
       </div>
       <span class="nav-label">Agregar</span>
+    </button>
+    <button class="nav-item" data-view="actividad" aria-label="Actividad">
+      <div class="nav-icon-wrap">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="6" y1="20" x2="6" y2="12"/>
+          <line x1="12" y1="20" x2="12" y2="6"/>
+          <line x1="18" y1="20" x2="18" y2="14"/>
+        </svg>
+      </div>
+      <span class="nav-label">Actividad</span>
     </button>
   </nav>
 
