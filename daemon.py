@@ -36,7 +36,13 @@ BATTERY_VOLTAGE_EMPTY = 3.0
 BATTERY_VOLTAGE_FULL  = 4.2
 
 FILTER_CACHE_DIR = os.path.join(BASE_DIR, ".filter_cache")
-HIGHPASS_HZ      = 120
+# Antes usábamos un pasa-altos duro (corte total por debajo de 120Hz), pero
+# eso eliminaba contenido musical real en temas con bajo protagónico (ej. la
+# línea de bajo de "Beat It" sonaba "sin cuerpo"). Un shelf suave ATENÚA
+# (no elimina) los graves por debajo del corte, así se reduce la distorsión
+# por exceso de excursión en parlantes chicos sin borrar la parte musical.
+BASS_SHELF_HZ      = 80
+BASS_SHELF_GAIN_DB = -6
 
 current_uid       = None
 current_album     = None
@@ -303,15 +309,17 @@ def get_duration(track_path):
 # ── Filtro de graves (pasa-altos, cacheado) ───
 def _filter_cache_path(track_path):
     mtime = int(os.path.getmtime(track_path))
-    key = f"{track_path}|{mtime}|{HIGHPASS_HZ}"
+    key = f"{track_path}|{mtime}|bass|{BASS_SHELF_GAIN_DB}|{BASS_SHELF_HZ}"
     digest = hashlib.sha1(key.encode("utf-8")).hexdigest()[:16]
     return os.path.join(FILTER_CACHE_DIR, f"{digest}.mp3")
 
 def get_filtered_track_path(track_path):
-    """Pasa-altos suave (~120Hz) para reducir distorsión de graves en
-    parlantes chicos. Se cachea: solo se filtra la primera vez que se
-    reproduce cada pista. Si el filtro falla por lo que sea, se reproduce
-    el original — esta función nunca debe romper la reproducción."""
+    """Atenúa (no elimina) los graves por debajo de ~80Hz con un shelf
+    suave, para reducir la distorsión por exceso de excursión en parlantes
+    chicos sin perder el cuerpo/línea de bajo de la canción. Se cachea:
+    solo se procesa la primera vez que se reproduce cada pista. Si el
+    filtro falla por lo que sea, se reproduce el original — esta función
+    nunca debe romper la reproducción."""
     os.makedirs(FILTER_CACHE_DIR, exist_ok=True)
     cache_path = _filter_cache_path(track_path)
 
@@ -320,7 +328,7 @@ def get_filtered_track_path(track_path):
 
     try:
         subprocess.run(
-            ["sox", track_path, cache_path, "highpass", str(HIGHPASS_HZ)],
+            ["sox", track_path, cache_path, "bass", str(BASS_SHELF_GAIN_DB), str(BASS_SHELF_HZ)],
             check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         )
         return cache_path

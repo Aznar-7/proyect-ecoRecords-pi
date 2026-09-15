@@ -73,8 +73,9 @@ def test_get_filtered_track_path_runs_sox_on_cache_miss(tmp_path, monkeypatch):
     assert os.path.exists(result)
     assert calls[0][0] == "sox"
     assert calls[0][1] == str(track)
-    assert "highpass" in calls[0]
-    assert str(daemon.HIGHPASS_HZ) in calls[0]
+    assert "bass" in calls[0]
+    assert str(daemon.BASS_SHELF_GAIN_DB) in calls[0]
+    assert str(daemon.BASS_SHELF_HZ) in calls[0]
 
 
 def test_get_filtered_track_path_falls_back_to_original_on_sox_failure(tmp_path, monkeypatch):
