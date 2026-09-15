@@ -97,3 +97,23 @@ def test_get_filtered_track_path_falls_back_to_original_on_sox_failure(tmp_path,
     result = daemon.get_filtered_track_path(str(track))
 
     assert result == str(track)
+
+
+def test_get_filtered_track_path_leaves_no_corrupt_file_if_sox_dies_mid_write(tmp_path, monkeypatch):
+    cache_dir = tmp_path / "cache"
+    monkeypatch.setattr(daemon, "FILTER_CACHE_DIR", str(cache_dir))
+    track = tmp_path / "song.mp3"
+    _touch(track)
+
+    def _fake_run(cmd, **kwargs):
+        # sox alcanzó a escribir algo en el destino antes de morir a mitad
+        # de camino (disco lleno, sin memoria, la señal que sea).
+        _touch(cmd[2], b"partial garbage")
+        raise daemon.subprocess.CalledProcessError(1, cmd)
+    monkeypatch.setattr(daemon.subprocess, "run", _fake_run)
+
+    result = daemon.get_filtered_track_path(str(track))
+
+    final_cache_path = daemon._filter_cache_path(str(track))
+    assert result == str(track)
+    assert not os.path.exists(final_cache_path)

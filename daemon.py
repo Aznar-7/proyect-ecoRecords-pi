@@ -336,18 +336,29 @@ def get_filtered_track_path(track_path):
     if os.path.exists(cache_path):
         return cache_path
 
+    # sox escribe a un temporal primero: si muere a mitad de camino (disco
+    # lleno, sin memoria, lo que sea), nunca queda un archivo corrupto en
+    # cache_path — que es lo único que este chequeo de "ya existe" mira
+    # para decidir si reutilizar el resultado en cada reproducción futura.
+    tmp_output = cache_path + ".tmp"
     try:
         subprocess.run(
             [
-                "sox", track_path, cache_path,
+                "sox", track_path, tmp_output,
                 "bass", str(BASS_SHELF_GAIN_DB), str(BASS_SHELF_HZ),
                 "norm", str(NORM_TARGET_DB),
             ],
             check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         )
+        os.replace(tmp_output, cache_path)
         return cache_path
     except Exception as e:
         print(f"[ECO] Filtro de graves falló, reproduciendo original: {e}")
+        if os.path.exists(tmp_output):
+            try:
+                os.remove(tmp_output)
+            except OSError:
+                pass
         return track_path
 
 # ── Control de audio (proceso limpio por pista) ──
