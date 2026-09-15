@@ -44,12 +44,26 @@ FILTER_CACHE_DIR = os.path.join(BASE_DIR, ".filter_cache")
 BASS_SHELF_HZ      = 80
 BASS_SHELF_GAIN_DB = -6
 
+# Las pistas ya vienen en mp3 (con pérdida) y este filtro las vuelve a
+# codificar a mp3 — sin fijar la calidad, sox/lame usan su propio default,
+# que no es alto. Recodificar con pérdida dos veces a baja calidad es lo
+# que sonaba "raro" en graves y piano, y apagaba el detalle más sutil
+# (voces suaves) — eso es pérdida de generación, no un problema del shelf.
+# "320.2" = 320kbps (el máximo estándar de mp3) a calidad LAME 2 (casi la
+# más alta). Cuesta más espacio en el caché que el default, pero es la
+# forma de que el segundo encode no sea el cuello de botella de calidad.
+MP3_ENCODE_QUALITY = "320.2"
+
 # Cada álbum viene masterizado a un volumen distinto (temas viejos suelen
 # ser más flojos que masterizaciones modernas) — normalizar el pico de
 # cada pista a un nivel parejo evita saltos de volumen al cambiar de disco
-# y aprovecha todo el rango disponible en vez de sonar bajo. -1dB de
-# margen (no 0dB exacto) para no arriesgar recorte en la conversión D/A.
-NORM_TARGET_DB = -1
+# y aprovecha todo el rango disponible en vez de sonar bajo. -3dB de
+# margen (no -1 ni 0dB exacto): un mp3 puede reconstruirse con "picos entre
+# muestras" por encima de lo que midió la normalización, y con poco margen
+# eso se escucha como recorte en transitorios (justo lo que pasaba en el
+# piano). -3dB es el margen que la propia documentación de sox recomienda
+# para este caso.
+NORM_TARGET_DB = -3
 
 current_uid       = None
 current_album     = None
@@ -316,7 +330,10 @@ def get_duration(track_path):
 # ── Filtro de graves + normalización de volumen (cacheado) ───
 def _filter_cache_path(track_path):
     mtime = int(os.path.getmtime(track_path))
-    key = f"{track_path}|{mtime}|bass|{BASS_SHELF_GAIN_DB}|{BASS_SHELF_HZ}|norm|{NORM_TARGET_DB}"
+    key = (
+        f"{track_path}|{mtime}|bass|{BASS_SHELF_GAIN_DB}|{BASS_SHELF_HZ}"
+        f"|norm|{NORM_TARGET_DB}|q|{MP3_ENCODE_QUALITY}"
+    )
     digest = hashlib.sha1(key.encode("utf-8")).hexdigest()[:16]
     return os.path.join(FILTER_CACHE_DIR, f"{digest}.mp3")
 
@@ -344,7 +361,7 @@ def get_filtered_track_path(track_path):
     try:
         subprocess.run(
             [
-                "sox", track_path, tmp_output,
+                "sox", track_path, "-C", MP3_ENCODE_QUALITY, tmp_output,
                 "bass", str(BASS_SHELF_GAIN_DB), str(BASS_SHELF_HZ),
                 "norm", str(NORM_TARGET_DB),
             ],

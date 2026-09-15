@@ -56,12 +56,13 @@ def test_get_filtered_track_path_runs_sox_on_cache_miss(tmp_path, monkeypatch):
     monkeypatch.setattr(daemon, "FILTER_CACHE_DIR", str(cache_dir))
     track = tmp_path / "song.mp3"
     _touch(track)
+    expected_tmp_output = daemon._filter_cache_path(str(track)) + ".tmp"
 
     calls = []
 
     def _fake_run(cmd, **kwargs):
         calls.append(cmd)
-        _touch(cmd[2], b"filtered")  # simula que sox escribió el archivo de salida
+        _touch(expected_tmp_output, b"filtered")  # simula que sox escribió el archivo de salida
         class _Result:
             returncode = 0
         return _Result()
@@ -73,6 +74,13 @@ def test_get_filtered_track_path_runs_sox_on_cache_miss(tmp_path, monkeypatch):
     assert os.path.exists(result)
     assert calls[0][0] == "sox"
     assert calls[0][1] == str(track)
+    # Calidad de reencode explícita: sin esto, sox usa su propio default
+    # (no documentado como alto), y recodificar un mp3 ya con pérdida por
+    # segunda vez a baja calidad es lo que causaba el bajo/piano "raro" y
+    # la voz apagada reportados — la pérdida de generación se nota más en
+    # el contenido más sutil (voces suaves) y en transitorios (piano).
+    assert "-C" in calls[0]
+    assert daemon.MP3_ENCODE_QUALITY in calls[0]
     assert "bass" in calls[0]
     assert str(daemon.BASS_SHELF_GAIN_DB) in calls[0]
     assert str(daemon.BASS_SHELF_HZ) in calls[0]
@@ -104,11 +112,12 @@ def test_get_filtered_track_path_leaves_no_corrupt_file_if_sox_dies_mid_write(tm
     monkeypatch.setattr(daemon, "FILTER_CACHE_DIR", str(cache_dir))
     track = tmp_path / "song.mp3"
     _touch(track)
+    expected_tmp_output = daemon._filter_cache_path(str(track)) + ".tmp"
 
     def _fake_run(cmd, **kwargs):
         # sox alcanzó a escribir algo en el destino antes de morir a mitad
         # de camino (disco lleno, sin memoria, la señal que sea).
-        _touch(cmd[2], b"partial garbage")
+        _touch(expected_tmp_output, b"partial garbage")
         raise daemon.subprocess.CalledProcessError(1, cmd)
     monkeypatch.setattr(daemon.subprocess, "run", _fake_run)
 
