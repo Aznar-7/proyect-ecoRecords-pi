@@ -152,8 +152,11 @@ def album_cover(album_id):
 def get_history():
     if not os.path.exists(HISTORY_PATH):
         return jsonify([])
-    with open(HISTORY_PATH, "r") as f:
-        history = json.load(f)
+    try:
+        with open(HISTORY_PATH, "r") as f:
+            history = json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return jsonify([])
     return jsonify(list(reversed(history)))
 
 # ── API: estadísticas de uso ──────────────────
@@ -161,8 +164,11 @@ def get_history():
 def get_stats():
     if not os.path.exists(STATS_PATH):
         return jsonify({"albums": {}, "top_album": None})
-    with open(STATS_PATH, "r") as f:
-        stats = json.load(f)
+    try:
+        with open(STATS_PATH, "r") as f:
+            stats = json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return jsonify({"albums": {}, "top_album": None})
     top_album = max(stats, key=stats.get) if stats else None
     return jsonify({"albums": stats, "top_album": top_album})
 

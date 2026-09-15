@@ -58,12 +58,38 @@ lock = threading.Lock()
 
 # ── Config ───────────────────────────────────
 def read_config():
-    with open(CONFIG_PATH, "r") as f:
-        return json.load(f)
+    # Reintento corto: en Windows, abrir CONFIG_PATH puede fallar
+    # transitoriamente con PermissionError si otro hilo está en medio de un
+    # os.replace sobre ese mismo archivo en ese instante. En Linux esto no
+    # ocurre (rename atómico no bloquea lectores).
+    for attempt in range(10):
+        try:
+            with open(CONFIG_PATH, "r") as f:
+                return json.load(f)
+        except PermissionError:
+            if attempt == 9:
+                raise
+            time.sleep(0.005)
 
 def write_full_config(config):
-    with open(CONFIG_PATH, "w") as f:
+    # Sufijo único por proceso/hilo: config.json tiene varios escritores
+    # concurrentes (ticker de progreso, pausa/resume, next/prev, batería), y
+    # un nombre de .tmp fijo compartido entre hilos puede chocar (en Windows,
+    # incluso hace fallar el os.replace con PermissionError).
+    tmp_path = f"{CONFIG_PATH}.{os.getpid()}.{threading.get_ident()}.tmp"
+    with open(tmp_path, "w") as f:
         json.dump(config, f, indent=2)
+    # Reintento corto: en Windows, os.replace puede fallar transitoriamente
+    # con PermissionError si otro hilo tiene CONFIG_PATH abierto para lectura
+    # en ese instante (read_config concurrente). En Linux esto no ocurre.
+    for attempt in range(10):
+        try:
+            os.replace(tmp_path, CONFIG_PATH)
+            return
+        except PermissionError:
+            if attempt == 9:
+                raise
+            time.sleep(0.005)
 
 def write_state(album, track_index, track_name, total, playing, elapsed=0, duration=0):
     config = read_config()
@@ -324,13 +350,13 @@ def load_track(index):
     track_path = os.path.join(ALBUMS_PATH, current_album, current_tracks[index])
 
     current_duration    = get_duration(track_path)
-    track_start_time    = time.time()
     accumulated_elapsed = 0
     is_paused            = False
     track_started         = True
 
     volume_factor = get_volume_scale_factor()
     playback_path = get_filtered_track_path(track_path)
+    track_start_time = time.time()
     current_process = subprocess.Popen(
         build_mpg123_command(playback_path, volume_factor),
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
@@ -394,7 +420,6 @@ def _resume_now():
         return
     is_paused = False
     resume_at = accumulated_elapsed
-    track_start_time = time.time() - resume_at
 
     play_session += 1
     session = play_session
@@ -403,6 +428,7 @@ def _resume_now():
 
     volume_factor = get_volume_scale_factor()
     playback_path = get_filtered_track_path(track_path)
+    track_start_time = time.time() - resume_at
     current_process = subprocess.Popen(
         build_mpg123_command(playback_path, volume_factor, skip_frames=skip_frames),
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL

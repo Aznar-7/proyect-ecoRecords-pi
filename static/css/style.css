@@ -1369,12 +1369,6 @@ button:active {
   margin-top: 2px;
 }
 
-.settings-divider {
-  height: 1px;
-  background: var(--border);
-  margin: 4px 0;
-}
-
 .settings-shutdown-btn {
   display: flex;
   align-items: center;
@@ -1414,7 +1408,6 @@ button:active {
 }
 
 .modal-card.is-restarting .settings-item,
-.modal-card.is-restarting .settings-divider,
 .modal-card.is-restarting #settings-close {
   opacity: 0.35;
   pointer-events: none;

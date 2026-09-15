@@ -573,11 +573,11 @@ async function loadAlbums() {
       card.innerHTML = `
         <div class="album-disc ${album.has_cover ? 'has-cover' : ''}">
           ${album.has_cover
-            ? `<img src="/api/albums/${album.id}/cover" alt="${album.name}" loading="lazy" decoding="async">`
+            ? `<img src="/api/albums/${escapeHtml(album.id)}/cover" alt="${escapeHtml(album.name)}" loading="lazy" decoding="async">`
             : '<div class="album-disc-dot"></div>'}
         </div>
         <div class="album-info">
-          <p class="album-name">${album.name}</p>
+          <p class="album-name">${escapeHtml(album.name)}</p>
           <p class="album-tracks">${album.tracks} ${album.tracks === 1 ? 'pista' : 'pistas'}</p>
         </div>
         <svg class="album-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -669,17 +669,17 @@ async function showAlbumDetail(album) {
       </button>
       <div class="detail-header-text">
         <p class="app-label">Álbum</p>
-        <h1 class="app-name serif">${album.name}</h1>
+        <h1 class="app-name serif">${escapeHtml(album.name)}</h1>
       </div>
     </header>
 
     <div class="album-detail-disc">
       <div class="disc disc-medium">
-        ${album.has_cover ? `<div class="disc-cover"><img src="/api/albums/${album.id}/cover" alt="${album.name}" loading="lazy" decoding="async"></div>` : ''}
+        ${album.has_cover ? `<div class="disc-cover"><img src="/api/albums/${escapeHtml(album.id)}/cover" alt="${escapeHtml(album.name)}" loading="lazy" decoding="async"></div>` : ''}
         <div class="disc-grooves"></div>
         <div class="disc-label">
           <div class="disc-dot"></div>
-          <span class="disc-tag">${album.name.slice(0, 5).toUpperCase()}</span>
+          <span class="disc-tag">${escapeHtml(album.name.slice(0, 5).toUpperCase())}</span>
         </div>
       </div>
       <p class="album-detail-count">${album.tracks} pistas</p>
