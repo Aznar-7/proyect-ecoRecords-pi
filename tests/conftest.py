@@ -136,6 +136,7 @@ class FakePopen:
 def fake_popen(monkeypatch):
     FakePopen.instances = []
     monkeypatch.setattr(daemon.subprocess, "Popen", FakePopen)
+    monkeypatch.setattr(daemon, "watch_process", lambda proc, session: None)
     return FakePopen
 
 
