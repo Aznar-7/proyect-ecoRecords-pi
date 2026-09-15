@@ -1,18 +1,25 @@
 {
   "albums": {
     "53:48:6C:AA:75:00:01": "02-09",
-    "53:3F:6C:AA:75:00:01": "thriller"
+    "53:3F:6C:AA:75:00:01": "thriller",
+    "53:40:6C:AA:75:00:01": "fine-line",
+    "53:35:6C:AA:75:00:01": "libertad",
+    "53:3E:6C:AA:75:00:01": "mentira-la-verdad"
   },
   "volume": 100,
   "lights": "warm",
   "command": null,
   "now_playing": {
-    "album": null,
-    "track": 0,
-    "track_name": null,
-    "total": 0,
+    "album": "thriller",
+    "track": 4,
+    "track_name": "Thriller",
+    "total": 9,
     "playing": false,
-    "elapsed": 0,
-    "duration": 0
+    "elapsed": 49.65422010421753,
+    "duration": 357
+  },
+  "battery": {
+    "percent": 94,
+    "charging": true
   }
 }
