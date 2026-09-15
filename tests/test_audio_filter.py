@@ -142,6 +142,23 @@ def test_enforce_filter_cache_limit_does_nothing_under_limit(tmp_path, monkeypat
     assert small_file.exists()
 
 
+def test_enforce_filter_cache_limit_counts_and_evicts_orphaned_tmp_files(tmp_path, monkeypatch):
+    # Un .tmp huérfano queda si sox (o el proceso entero) muere a mitad de
+    # escritura — ej. un corte de luz en la Pi. Si el tope no lo cuenta ni
+    # lo puede borrar, un disco lleno de crashes viejos nunca se libera.
+    cache_dir = tmp_path / "cache"
+    cache_dir.mkdir()
+    monkeypatch.setattr(daemon, "FILTER_CACHE_DIR", str(cache_dir))
+    monkeypatch.setattr(daemon, "FILTER_CACHE_MAX_BYTES", 50)
+
+    orphan_tmp = cache_dir / "abc123.mp3.55.66.tmp"
+    _touch(orphan_tmp, b"x" * 100)
+
+    daemon._enforce_filter_cache_limit()
+
+    assert not orphan_tmp.exists()
+
+
 def test_enforce_filter_cache_limit_evicts_oldest_first_until_under_limit(tmp_path, monkeypatch):
     cache_dir = tmp_path / "cache"
     cache_dir.mkdir()

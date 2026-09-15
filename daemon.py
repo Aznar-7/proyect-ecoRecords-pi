@@ -345,13 +345,17 @@ def _enforce_filter_cache_limit(protected_path=None):
     viejas (por fecha de modificación, no de acceso — muchas Pi montan la
     SD con noatime) hasta volver a estar debajo del límite, sin tocar
     nunca protected_path (la entrada recién escrita — si una sola pista ya
-    supera el tope ella sola, igual no se puede borrar a sí misma). Nunca
-    debe romper la reproducción: cualquier error de filesystem se ignora."""
+    supera el tope ella sola, igual no se puede borrar a sí misma). También
+    cuenta y purga los .tmp huérfanos de un sox/proceso que murió a mitad
+    de escritura (ej. un corte de luz) — si no, nunca se liberan solos.
+    Nunca debe romper la reproducción: cualquier error de filesystem se
+    ignora."""
     try:
         entries = [
             os.path.join(FILTER_CACHE_DIR, name)
             for name in os.listdir(FILTER_CACHE_DIR)
-            if name.endswith(".mp3") and os.path.join(FILTER_CACHE_DIR, name) != protected_path
+            if (name.endswith(".mp3") or name.endswith(".tmp"))
+            and os.path.join(FILTER_CACHE_DIR, name) != protected_path
         ]
     except OSError:
         return
