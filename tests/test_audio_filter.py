@@ -225,6 +225,33 @@ def test_enforce_filter_cache_limit_tolerates_getsize_race(tmp_path, monkeypatch
     daemon._enforce_filter_cache_limit()  # no debe lanzar excepción
 
 
+def test_enforce_filter_cache_limit_tolerates_getmtime_race_during_sort(tmp_path, monkeypatch):
+    cache_dir = tmp_path / "cache"
+    cache_dir.mkdir()
+    monkeypatch.setattr(daemon, "FILTER_CACHE_DIR", str(cache_dir))
+    monkeypatch.setattr(daemon, "FILTER_CACHE_MAX_BYTES", 10)
+
+    # Tamaños reales (sin flakiness) para que total_size sí supere el tope
+    # y el código llegue a ordenar por fecha de modificación.
+    vanishing = cache_dir / "vanishing.mp3"
+    _touch(vanishing, b"x" * 100)
+    other = cache_dir / "other.mp3"
+    _touch(other, b"x" * 100)
+
+    real_getmtime = os.path.getmtime
+
+    def _flaky_getmtime(path):
+        # desapareció justo entre listar el directorio y ordenar por
+        # fecha (otra limpieza corriendo, lo que sea).
+        if "vanishing.mp3" in str(path):
+            raise OSError("desapareció justo antes de medir la fecha")
+        return real_getmtime(path)
+
+    monkeypatch.setattr(daemon.os.path, "getmtime", _flaky_getmtime)
+
+    daemon._enforce_filter_cache_limit()  # no debe lanzar excepción
+
+
 def test_get_filtered_track_path_uses_a_tmp_name_unique_per_process_and_thread(tmp_path, monkeypatch):
     cache_dir = tmp_path / "cache"
     monkeypatch.setattr(daemon, "FILTER_CACHE_DIR", str(cache_dir))

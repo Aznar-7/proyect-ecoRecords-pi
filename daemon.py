@@ -340,6 +340,12 @@ def _safe_getsize(path):
     except OSError:
         return 0
 
+def _safe_getmtime(path):
+    try:
+        return os.path.getmtime(path)
+    except OSError:
+        return 0
+
 def _enforce_filter_cache_limit(protected_path=None):
     """Si .filter_cache/ pasó el tope de tamaño, borra las entradas más
     viejas (por fecha de modificación, no de acceso — muchas Pi montan la
@@ -366,7 +372,7 @@ def _enforce_filter_cache_limit(protected_path=None):
     if total_size <= FILTER_CACHE_MAX_BYTES:
         return
 
-    entries.sort(key=lambda p: os.path.getmtime(p) if os.path.exists(p) else 0)
+    entries.sort(key=_safe_getmtime)
     for path in entries:
         if total_size <= FILTER_CACHE_MAX_BYTES:
             break
