@@ -334,25 +334,35 @@ def get_duration(track_path):
         return 0
 
 # ── Filtro de graves + normalización de volumen (cacheado) ───
-def _enforce_filter_cache_limit():
+def _safe_getsize(path):
+    try:
+        return os.path.getsize(path)
+    except OSError:
+        return 0
+
+def _enforce_filter_cache_limit(protected_path=None):
     """Si .filter_cache/ pasó el tope de tamaño, borra las entradas más
     viejas (por fecha de modificación, no de acceso — muchas Pi montan la
-    SD con noatime) hasta volver a estar debajo del límite. Nunca debe
-    romper la reproducción: cualquier error de filesystem se ignora."""
+    SD con noatime) hasta volver a estar debajo del límite, sin tocar
+    nunca protected_path (la entrada recién escrita — si una sola pista ya
+    supera el tope ella sola, igual no se puede borrar a sí misma). Nunca
+    debe romper la reproducción: cualquier error de filesystem se ignora."""
     try:
         entries = [
             os.path.join(FILTER_CACHE_DIR, name)
             for name in os.listdir(FILTER_CACHE_DIR)
-            if name.endswith(".mp3")
+            if name.endswith(".mp3") and os.path.join(FILTER_CACHE_DIR, name) != protected_path
         ]
     except OSError:
         return
 
-    total_size = sum(os.path.getsize(p) for p in entries if os.path.exists(p))
+    total_size = sum(_safe_getsize(p) for p in entries)
+    if protected_path:
+        total_size += _safe_getsize(protected_path)
     if total_size <= FILTER_CACHE_MAX_BYTES:
         return
 
-    entries.sort(key=lambda p: os.path.getmtime(p))
+    entries.sort(key=lambda p: os.path.getmtime(p) if os.path.exists(p) else 0)
     for path in entries:
         if total_size <= FILTER_CACHE_MAX_BYTES:
             break
@@ -392,7 +402,10 @@ def get_filtered_track_path(track_path):
     # lleno, sin memoria, lo que sea), nunca queda un archivo corrupto en
     # cache_path — que es lo único que este chequeo de "ya existe" mira
     # para decidir si reutilizar el resultado en cada reproducción futura.
-    tmp_output = cache_path + ".tmp"
+    # Nombre único por proceso/hilo (mismo motivo que CONFIG_PATH más
+    # arriba): si en el futuro algo llama a esta función sin el lock
+    # global, dos llamados concurrentes no se pisan el mismo temporal.
+    tmp_output = f"{cache_path}.{os.getpid()}.{threading.get_ident()}.tmp"
     try:
         subprocess.run(
             [
@@ -403,7 +416,7 @@ def get_filtered_track_path(track_path):
             check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         )
         os.replace(tmp_output, cache_path)
-        _enforce_filter_cache_limit()
+        _enforce_filter_cache_limit(protected_path=cache_path)
         return cache_path
     except Exception as e:
         print(f"[ECO] Filtro de graves falló, reproduciendo original: {e}")

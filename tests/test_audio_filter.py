@@ -56,13 +56,12 @@ def test_get_filtered_track_path_runs_sox_on_cache_miss(tmp_path, monkeypatch):
     monkeypatch.setattr(daemon, "FILTER_CACHE_DIR", str(cache_dir))
     track = tmp_path / "song.mp3"
     _touch(track)
-    expected_tmp_output = daemon._filter_cache_path(str(track)) + ".tmp"
 
     calls = []
 
     def _fake_run(cmd, **kwargs):
         calls.append(cmd)
-        _touch(expected_tmp_output, b"filtered")  # simula que sox escribió el archivo de salida
+        _touch(cmd[4], b"filtered")  # simula que sox escribió el archivo de salida
         class _Result:
             returncode = 0
         return _Result()
@@ -71,6 +70,7 @@ def test_get_filtered_track_path_runs_sox_on_cache_miss(tmp_path, monkeypatch):
 
     result = daemon.get_filtered_track_path(str(track))
 
+    assert result == daemon._filter_cache_path(str(track))
     assert os.path.exists(result)
     assert calls[0][0] == "sox"
     assert calls[0][1] == str(track)
@@ -112,12 +112,13 @@ def test_get_filtered_track_path_leaves_no_corrupt_file_if_sox_dies_mid_write(tm
     monkeypatch.setattr(daemon, "FILTER_CACHE_DIR", str(cache_dir))
     track = tmp_path / "song.mp3"
     _touch(track)
-    expected_tmp_output = daemon._filter_cache_path(str(track)) + ".tmp"
 
     def _fake_run(cmd, **kwargs):
-        # sox alcanzó a escribir algo en el destino antes de morir a mitad
-        # de camino (disco lleno, sin memoria, la señal que sea).
-        _touch(expected_tmp_output, b"partial garbage")
+        # sox alcanzó a escribir algo en el destino real (el temporal que
+        # el propio código pidió) antes de morir a mitad de camino (disco
+        # lleno, sin memoria, la señal que sea).
+        tmp_output = cmd[4]
+        _touch(tmp_output, b"partial garbage")
         raise daemon.subprocess.CalledProcessError(1, cmd)
     monkeypatch.setattr(daemon.subprocess, "run", _fake_run)
 
@@ -166,3 +167,62 @@ def test_enforce_filter_cache_limit_ignores_missing_cache_dir(tmp_path, monkeypa
     monkeypatch.setattr(daemon, "FILTER_CACHE_MAX_BYTES", 1000)
 
     daemon._enforce_filter_cache_limit()  # no debe lanzar excepción
+
+
+def test_enforce_filter_cache_limit_never_evicts_the_protected_path(tmp_path, monkeypatch):
+    cache_dir = tmp_path / "cache"
+    cache_dir.mkdir()
+    monkeypatch.setattr(daemon, "FILTER_CACHE_DIR", str(cache_dir))
+    monkeypatch.setattr(daemon, "FILTER_CACHE_MAX_BYTES", 50)
+
+    # El archivo que se acaba de escribir ya solo supera el tope (ej. una
+    # pista larga) — igual nunca se puede borrar a sí mismo.
+    just_written = cache_dir / "new.mp3"
+    _touch(just_written, b"x" * 100)
+
+    daemon._enforce_filter_cache_limit(protected_path=str(just_written))
+
+    assert just_written.exists()
+
+
+def test_enforce_filter_cache_limit_tolerates_getsize_race(tmp_path, monkeypatch):
+    cache_dir = tmp_path / "cache"
+    cache_dir.mkdir()
+    monkeypatch.setattr(daemon, "FILTER_CACHE_DIR", str(cache_dir))
+    monkeypatch.setattr(daemon, "FILTER_CACHE_MAX_BYTES", 10)
+
+    real_file = cache_dir / "real.mp3"
+    _touch(real_file, b"x" * 100)
+
+    real_getsize = os.path.getsize
+
+    def _flaky_getsize(path):
+        # simula que el archivo desapareció justo entre listar el
+        # directorio y medirlo (otra limpieza corriendo, lo que sea).
+        if "real.mp3" in str(path):
+            raise OSError("desapareció justo antes de medirlo")
+        return real_getsize(path)
+
+    monkeypatch.setattr(daemon.os.path, "getsize", _flaky_getsize)
+
+    daemon._enforce_filter_cache_limit()  # no debe lanzar excepción
+
+
+def test_get_filtered_track_path_uses_a_tmp_name_unique_per_process_and_thread(tmp_path, monkeypatch):
+    cache_dir = tmp_path / "cache"
+    monkeypatch.setattr(daemon, "FILTER_CACHE_DIR", str(cache_dir))
+    track = tmp_path / "song.mp3"
+    _touch(track)
+
+    calls = []
+
+    def _fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        raise daemon.subprocess.CalledProcessError(1, cmd)
+    monkeypatch.setattr(daemon.subprocess, "run", _fake_run)
+
+    daemon.get_filtered_track_path(str(track))
+
+    tmp_output = calls[0][4]  # sox, track, -C, calidad, <tmp_output>, ...
+    assert f".{os.getpid()}." in tmp_output
+    assert f".{daemon.threading.get_ident()}." in tmp_output
