@@ -1043,6 +1043,27 @@ button:active {
   height: 120px;
 }
 
+/* .disc-label es 70px fijo, pensado para el disco grande de Inicio
+   (210px), donde .disc-cover (58% del disco) queda bien más grande que
+   la etiqueta central y la tapa se ve alrededor. En .disc-medium (120px)
+   .disc-cover da ~70px — casi el mismo tamaño que la etiqueta — así que
+   la etiqueta opaca tapaba casi toda la tapa. La achicamos acá en
+   proporción al disco (120/210) para que la tapa vuelva a verse. */
+.disc-medium .disc-label {
+  width: 40px;
+  height: 40px;
+  gap: 3px;
+}
+
+.disc-medium .disc-dot {
+  width: 6px;
+  height: 6px;
+}
+
+.disc-medium .disc-tag {
+  font-size: 5px;
+}
+
 .album-detail-count {
   font-size: 13px;
   color: var(--text-muted);
@@ -1543,10 +1564,6 @@ button:active {
 
 .track-item:active {
   background: var(--bg-muted);
-}
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
 
 /* Label central se superpone a la cover */
