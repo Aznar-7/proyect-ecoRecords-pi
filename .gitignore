@@ -3,9 +3,15 @@ venv/
 
 # Cloudflare (credenciales del túnel - no subir)
 .cloudflared/
+# Binario de cloudflared (se instala en el dispositivo, no se versiona)
+/cloudflared
 
 # Scripts de prueba
 test_nfc.py
+
+# Backups de editor/terminal
+*.save
+*.save.*
 
 # Python
 __pycache__/
