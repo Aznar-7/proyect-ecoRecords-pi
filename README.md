@@ -90,9 +90,9 @@ Una PWA instalable (sin necesidad de tienda de apps) — biblioteca de discos y 
 - [x] Discos personalizados (vinilos decorativos + tag NFC + imán pegados abajo)
 - [x] Impresión 3D final y armado de la carcasa
 - [x] Ajuste fino de estéreo real (selección de canal izquierdo/derecho)
-- [ ] Mejoras UI (porcentaje bateria, mejoras de QOL, estadisticas)
+- [x] Mejoras UI (porcentaje bateria, mejoras de QOL, estadisticas)
 - [ ] Panel de conexion WIFI como puerto de conexion cuando no esta conectado a nada
-- [ ] Control de volumen por software
+- [x] Control de volumen por software
 - [ ] Packaging de los álbumes (fundas tipo vinilo)
 
 <br>
@@ -150,5 +150,5 @@ Construido desde cero como regalo personalizado — sin atajos de productos come
 ---
 
 <div align="center">
-<sub>Construido con 🟤 en Córdoba, Argentina</sub>
+<sub>Construido con 🧉 en Córdoba, Argentina</sub>
 </div>
