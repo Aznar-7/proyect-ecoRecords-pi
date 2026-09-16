@@ -66,10 +66,14 @@ def test_progress_tick_skips_write_when_elapsed_unchanged(tmp_path, monkeypatch)
     assert write_calls == []  # no vuelve a escribir el mismo valor
 
 
-def test_progress_tick_serializes_with_playback_state_lock():
+def test_progress_tick_serializes_with_playback_state_lock(tmp_path, monkeypatch):
     # Prueba directa del mecanismo del fix: _progress_tick tiene que
     # esperar el mismo lock que usan _pause_now/_resume_now antes de leer
     # el estado compartido, para no ver una foto a medio actualizar.
+    config_path = tmp_path / "config.json"
+    config_path.write_text(json.dumps({"volume": 70}))
+    monkeypatch.setattr(daemon, "CONFIG_PATH", str(config_path))
+
     daemon.current_album = "thriller"
     daemon.current_tracks = ["01 - Beat It.mp3"]
     daemon.current_index = 0
