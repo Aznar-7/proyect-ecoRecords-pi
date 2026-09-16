@@ -633,19 +633,37 @@ def handle_commands():
     clear_command()
 
 # ── Ticker de progreso ────────────────────────
+def _progress_tick(last_written):
+    """Un ciclo del ticker: si hay una pista activa, calcula el elapsed
+    actual y lo escribe si cambió. _pause_now/_resume_now modifican
+    is_paused/track_start_time/accumulated_elapsed bajo `lock` — sin tomar
+    el mismo lock acá, este ticker (que corre cada 1s en su propio hilo)
+    podía leer una foto a medio actualizar (ej. is_paused ya en False pero
+    track_start_time todavía con el valor viejo de antes del resume) y
+    mostrar un elapsed completamente inventado por un instante. Devuelve
+    el nuevo last_written."""
+    with lock:
+        active = current_album and not is_paused and current_tracks
+        if not active:
+            return last_written
+        elapsed = int(accumulated_elapsed + (time.time() - track_start_time))
+        album = current_album
+        track_name = clean_track_name(current_tracks[current_index])
+        total = len(current_tracks)
+        index = current_index
+        duration = current_duration
+
+    if elapsed == last_written:
+        return last_written
+
+    write_state(album, index + 1, track_name, total, True, elapsed, duration)
+    return elapsed
+
 def progress_ticker():
     last_written = -1
     while True:
         try:
-            if current_album and not is_paused and current_tracks:
-                elapsed = int(accumulated_elapsed + (time.time() - track_start_time))
-                if elapsed != last_written:
-                    last_written = elapsed
-                    track_name = clean_track_name(current_tracks[current_index])
-                    write_state(
-                        current_album, current_index + 1, track_name,
-                        len(current_tracks), True, elapsed, current_duration
-                    )
+            last_written = _progress_tick(last_written)
         except Exception:
             pass
         time.sleep(1)
