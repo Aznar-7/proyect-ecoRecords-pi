@@ -328,6 +328,14 @@ button:active {
   z-index: 2;
 }
 
+/* Las tapas ya vienen diseñadas como una etiqueta de vinilo real — con la
+   etiqueta genérica (puntito + nombre corto) encima queda amontonado y
+   redundante. Esa etiqueta genérica es solo el placeholder para cuando
+   no hay tapa. */
+.disc.has-cover .disc-label {
+  display: none;
+}
+
 .disc-dot {
   width: 10px;
   height: 10px;

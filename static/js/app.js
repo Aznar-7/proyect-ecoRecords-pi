@@ -323,6 +323,7 @@ function updateDiscCover(albumId) {
   let coverDiv = disc.querySelector('.disc-cover')
 
   if (!albumId) {
+    disc.classList.remove('has-cover')
     if (coverDiv) {
       coverDiv.style.transition = 'opacity 0.25s ease'
       coverDiv.style.opacity = '0'
@@ -345,8 +346,14 @@ function updateDiscCover(albumId) {
     coverDiv.innerHTML = ''
     coverDiv.appendChild(img)
     requestAnimationFrame(() => { coverDiv.style.opacity = '1' })
+    // Las tapas de los discos ya vienen diseñadas como una etiqueta de
+    // vinilo real (con el número de álbum, etc.) — mostrar además la
+    // etiqueta genérica (puntito + nombre corto) encima queda amontonado
+    // y redundante. Esa etiqueta genérica es solo para cuando no hay tapa.
+    disc.classList.add('has-cover')
   }
   img.onerror = () => {
+    disc.classList.remove('has-cover')
     if (coverDiv) coverDiv.remove()
   }
   img.src = coverUrl
@@ -676,13 +683,14 @@ async function showAlbumDetail(album) {
     </header>
 
     <div class="album-detail-disc">
-      <div class="disc disc-medium">
+      <div class="disc disc-medium ${album.has_cover ? 'has-cover' : ''}">
         ${album.has_cover ? `<div class="disc-cover"><img src="/api/albums/${escapeHtml(album.id)}/cover" alt="${escapeHtml(album.name)}" loading="lazy" decoding="async"></div>` : ''}
         <div class="disc-grooves"></div>
+        ${album.has_cover ? '' : `
         <div class="disc-label">
           <div class="disc-dot"></div>
           <span class="disc-tag">${escapeHtml(album.name.slice(0, 5).toUpperCase())}</span>
-        </div>
+        </div>`}
       </div>
       <p class="album-detail-count">${album.tracks} pistas</p>
     </div>
