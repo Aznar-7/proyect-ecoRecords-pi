@@ -9,7 +9,7 @@
 [![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-Zero%202W-C51A4A?style=flat-square&logo=raspberrypi&logoColor=white)](https://www.raspberrypi.com/)
 [![Python](https://img.shields.io/badge/Python-3.13-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.x-000000?style=flat-square&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
-[![Status](https://img.shields.io/badge/status-en%20construcción-C4956A?style=flat-square)]()
+[![Status](https://img.shields.io/badge/status-listo-6DA34D?style=flat-square)]()
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)]()
 
 </div>
@@ -23,6 +23,18 @@
 No hay pantalla obligatoria. No hace falta el celular para usarlo — apoyás el disco, bajás el brazo, y listo. La webapp existe como panel de control opcional (biblioteca de álbumes, agregar música nueva), no como forma principal de uso.
 
 Diseñado, programado y construido enteramente a mano como regalo personalizado, con estética vintage de madera. Sin compras de productos terminados — cada decisión de hardware, cada línea de código, cada pieza de la carcasa es parte del proyecto.
+
+<br>
+
+## ✦ El objeto terminado
+
+<div align="center">
+<img src="docs/foto-frente.jpg" width="420" alt="Eco Records terminado, disco girando">
+&nbsp;&nbsp;
+<img src="docs/foto-detalle.jpg" width="420" alt="Eco Records, vista del brazo y el plato">
+
+<sub>Edición 02/09 — grabada a mano en la base, porque esta no sale a producción en serie.</sub>
+</div>
 
 <br>
 
@@ -67,15 +79,23 @@ Cada disco es un **álbum completo**, con sus pistas en orden. El gesto de bajar
 
 <br>
 
-## ✦ La interfaz
+## ✦ La app
 
-Una PWA instalable (sin necesidad de tienda de apps) — biblioteca de discos y descarga de álbumes nuevos pegando un link de YouTube. El uso diario del objeto no depende de ella: se usa apoyando discos y bajando el brazo.
+Una PWA instalable (sin necesidad de tienda de apps) — biblioteca de discos, reproductor con volumen y progreso en tiempo real, actividad de escucha, y descarga de álbumes nuevos pegando un link de YouTube. El uso diario del objeto no depende de ella: se usa apoyando discos y bajando el brazo — la app es para cuando querés mirar qué tenés, agregar algo nuevo, o simplemente ver qué sonó.
+
+<div align="center">
+
+<img src="docs/app-discos.png" width="230" alt="Biblioteca de discos"> <img src="docs/app-album.jpg" width="230" alt="Detalle de álbum"> <img src="docs/app-reproductor.jpg" width="230" alt="Reproductor"> <img src="docs/app-agregar.jpg" width="230" alt="Agregar álbum"> <img src="docs/app-actividad.jpg" width="230" alt="Actividad">
+
+<sub>Biblioteca · Detalle de álbum · Reproductor · Agregar álbum vía YouTube · Actividad</sub>
+
+</div>
 
 <br>
 
 ## ✦ Estado del proyecto
 
-> 🚧 **En construcción activa** — el software y la electrónica funcionan de punta a punta; queda terminar el armado físico definitivo.
+> ✅ **Terminado** — hardware armado, software andando de punta a punta.
 
 - [x] Raspberry Pi Zero 2W configurada (headless, SSH, WiFi, servicios systemd)
 - [x] Backend Flask con API REST completa
@@ -90,10 +110,12 @@ Una PWA instalable (sin necesidad de tienda de apps) — biblioteca de discos y 
 - [x] Discos personalizados (vinilos decorativos + tag NFC + imán pegados abajo)
 - [x] Impresión 3D final y armado de la carcasa
 - [x] Ajuste fino de estéreo real (selección de canal izquierdo/derecho)
-- [x] Mejoras UI (porcentaje bateria, mejoras de QOL, estadisticas)
-- [ ] Panel de conexion WIFI como puerto de conexion cuando no esta conectado a nada
+- [x] Mejoras UI (porcentaje batería, mejoras de QOL, estadísticas)
+- [x] Filtro de audio + normalización de volumen entre álbumes
+- [x] Historial y actividad de reproducción
+- [x] Conexión a múltiples redes WiFi (casa, casa de destino, hotspot)
 - [x] Control de volumen por software
-- [ ] Packaging de los álbumes (fundas tipo vinilo)
+- [x] Packaging de los álbumes (fundas tipo vinilo)
 
 <br>
 
